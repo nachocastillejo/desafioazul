@@ -2,7 +2,7 @@ import React from 'react';
 
 const PrivacyPolicyPage: React.FC = () => {
   return (
-    <div className="max-w-3xl mx-auto p-6 md:p-8 bg-white dark:bg-gray-800 rounded-lg shadow-xl text-text-primary dark:text-white">
+    <div className="max-w-3xl mx-auto p-6 md:p-8 text-text-primary dark:text-white">
       <h1 className="text-3xl sm:text-4xl font-bold text-primary dark:text-primary mb-8 text-center">
         POLÍTICA DE PRIVACIDAD
       </h1>

@@ -2,7 +2,7 @@ import React from 'react';
 
 const PurchaseTermsPage: React.FC = () => {
   return (
-    <div className="max-w-3xl mx-auto p-6 md:p-8 bg-white dark:bg-gray-800 rounded-lg shadow-xl text-text-primary dark:text-white">
+    <div className="max-w-3xl mx-auto p-6 md:p-8 text-text-primary dark:text-white">
       <h1 className="text-3xl sm:text-4xl font-bold text-primary dark:text-primary mb-8 text-center">
         TÉRMINOS Y CONDICIONES GENERALES DE COMPRA
       </h1>
@@ -178,55 +178,6 @@ const PurchaseTermsPage: React.FC = () => {
         </p>
       </section>
       
-      {/* FAQ Section - Extracted from the end of the provided text */}
-      <section className="mb-8">
-        <h2 className="text-2xl sm:text-3xl font-bold text-primary dark:text-primary mb-6 text-center">
-          Preguntas Frecuentes (FAQ)
-        </h2>
-        <div className="space-y-6">
-          <div>
-            <h3 className="text-md sm:text-lg font-semibold text-text-primary dark:text-white mb-2">1. ¿Qué es Desafío Azul?</h3>
-            <p className="text-base text-text-secondary dark:text-gray-400 leading-relaxed">Es una plataforma online que ofrece test psicotécnicos para entrenar habilidades cognitivas y mejorar el rendimiento en exámenes oficiales. De esta manera, te permite entrenar y perfeccionar tus habilidades en test psicotécnicos, ayudándote a conseguir tu plaza en la oposición.</p>
-          </div>
-          <div>
-            <h3 className="text-md sm:text-lg font-semibold text-text-primary dark:text-white mb-2">2. ¿Cómo funciona la plataforma?</h3>
-            <p className="text-base text-text-secondary dark:text-gray-400 leading-relaxed">Solo debes elegir a qué plan Premium quieres suscribirte, registrarte y comenzar a practicar. Puedes elegir el tipo de test que deseas realizar, si por preguntas sueltas o test cronometrados,  guardar las preguntas desees y revisar tus errores con explicaciones detalladas, entre otras.</p>
-          </div>
-          <div>
-            <h3 className="text-md sm:text-lg font-semibold text-text-primary dark:text-white mb-2">3. ¿Puedo acceder desde cualquier dispositivo?</h3>
-            <p className="text-base text-text-secondary dark:text-gray-400 leading-relaxed">Sí, nuestra plataforma es compatible con ordenadores, tablets y móviles.</p>
-          </div>
-          <div>
-            <h3 className="text-md sm:text-lg font-semibold text-text-primary dark:text-white mb-2">4. ¿Los test son similares a los oficiales?</h3>
-            <p className="text-base text-text-secondary dark:text-gray-400 leading-relaxed">Sí, están diseñados para simular las pruebas reales de oposiciones y otros procesos selectivos.</p>
-          </div>
-          <div>
-            <h3 className="text-md sm:text-lg font-semibold text-text-primary dark:text-white mb-2">5. ¿Se actualizan las preguntas?</h3>
-            <p className="text-base text-text-secondary dark:text-gray-400 leading-relaxed">Si, mantenemos actualizadas todas las preguntas a la vez que incorporamos nuevas preguntas cada mes.</p>
-          </div>
-          <div>
-            <h3 className="text-md sm:text-lg font-semibold text-text-primary dark:text-white mb-2">6. ¿Se guarda mi progreso?</h3>
-            <p className="text-base text-text-secondary dark:text-gray-400 leading-relaxed">Sí, puedes acceder a tu historial de test y revisar tu evolución en cualquier momento.</p>
-          </div>
-          <div>
-            <h3 className="text-md sm:text-lg font-semibold text-text-primary dark:text-white mb-2">7. ¿Hay test adaptativos?</h3>
-            <p className="text-base text-text-secondary dark:text-gray-400 leading-relaxed">Sí, la plataforma te permite ajustar los test al número de preguntas que desees así como de las áreas que necesites mejorar para un aprendizaje más personalizado.</p>
-          </div>
-          <div>
-            <h3 className="text-md sm:text-lg font-semibold text-text-primary dark:text-white mb-2">8. ¿Cuánto cuesta el acceso a la plataforma?</h3>
-            <p className="text-base text-text-secondary dark:text-gray-400 leading-relaxed">Ofrecemos diferentes planes de suscripción. Consulta nuestra sección de precios para más detalles.</p>
-          </div>
-          <div>
-            <h3 className="text-md sm:text-lg font-semibold text-text-primary dark:text-white mb-2">9. Si me suscribo al Plan Premium, ¿puedo darme de baja en cualquier momento?</h3>
-            <p className="text-base text-text-secondary dark:text-gray-400 leading-relaxed">En Desafío Azul no tenemos permanencia de ningun tipo, si te das de alta y al mes siguiente no quieres seguir suscrito, puedes darte de baja sin problema; simplemente cancela la suscripción unos días antes de que empiece el siguiente periodo de facturación en el apartado Gestionar mi suscripción dentro de Mi cuenta.</p>
-          </div>
-          <div>
-            <h3 className="text-md sm:text-lg font-semibold text-text-primary dark:text-white mb-2">10. ¿Cómo puedo contactar con soporte?</h3>
-            <p className="text-base text-text-secondary dark:text-gray-400 leading-relaxed">Puedes escribirnos a [correo de soporte] o utilizar el chat de atención al cliente dentro de la plataforma.</p>
-          </div>
-        </div>
-      </section>
-
       <p className="text-sm text-gray-500 dark:text-gray-400 mt-10 text-center">
         Fecha de última actualización: [Fecha]
       </p>

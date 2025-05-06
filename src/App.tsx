@@ -12,12 +12,14 @@ import Register from './pages/Register';
 import { Menu } from 'lucide-react';
 import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
+import Footer from './components/Footer';
 
 const Profile = lazy(() => import('./pages/Profile'));
 const LegalPage = lazy(() => import('./pages/LegalPage'));
 const PrivacyPolicyPage = lazy(() => import('./pages/PrivacyPolicyPage'));
 const CookiesPolicyPage = lazy(() => import('./pages/CookiesPolicyPage'));
 const PurchaseTermsPage = lazy(() => import('./pages/PurchaseTermsPage'));
+const FaqPage = lazy(() => import('./pages/FaqPage'));
 
 function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -133,6 +135,10 @@ function App() {
             path="/condiciones-generales-de-compra"
             element={<Suspense fallback={<div>Loading...</div>}><AppLayout isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar}><PurchaseTermsPage /></AppLayout></Suspense>}
           />
+          <Route
+            path="/faq"
+            element={<Suspense fallback={<div>Loading...</div>}><AppLayout isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar}><FaqPage /></AppLayout></Suspense>}
+          />
           
           {/* Redirigir rutas no encontradas */}
           <Route path="*" element={<Navigate to="/" replace />} />
@@ -170,7 +176,7 @@ function AppLayout({ children, isSidebarOpen, toggleSidebar }: AppLayoutProps) {
       </div>
 
       {/* Contenido principal */}
-      <main className="flex-1 relative">
+      <main className="flex-1 relative flex flex-col">
         {/* Botón de menú móvil - solo visible cuando el sidebar está cerrado */}
         {!isSidebarOpen && (
           <button
@@ -181,9 +187,10 @@ function AppLayout({ children, isSidebarOpen, toggleSidebar }: AppLayoutProps) {
           </button>
         )}
 
-        <div className="container mx-auto px-4 py-6 sm:px-6 lg:px-8 pt-14 lg:pt-6">
+        <div className="container mx-auto px-4 py-6 sm:px-6 lg:px-8 pt-14 lg:pt-6 flex-grow">
           {children}
         </div>
+        <Footer />
       </main>
     </div>
   );

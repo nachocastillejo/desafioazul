@@ -14,7 +14,8 @@ import {
   ChevronDown,
   ChevronUp,
   LogOut,
-  Bookmark
+  Bookmark,
+  Info
 } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
 import { useTestStore } from '../lib/store';
@@ -150,6 +151,20 @@ export default function Sidebar({ onCloseMobile, isSidebarOpen }: SidebarProps) 
             >
               <Calculator className="w-5 h-5" />
               <span className="font-medium">Calculadora</span>
+            </button>
+          </li>
+
+          <li>
+            <button
+              onClick={() => handleNavigation('/faq')}
+              className={`w-full flex items-center space-x-3 p-3 rounded-xl transition-colors ${
+                location.pathname === '/faq'
+                  ? 'bg-primary/10 dark:bg-primary/20 text-primary'
+                  : 'text-text-secondary dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
+              }`}
+            >
+              <Info className="w-5 h-5" />
+              <span className="font-medium">Preguntas Frecuentes</span>
             </button>
           </li>
 
