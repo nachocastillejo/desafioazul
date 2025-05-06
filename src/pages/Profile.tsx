@@ -1,11 +1,11 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuthStore } from '../lib/store';
+import { useAuth } from '../contexts/AuthContext';
 import { User, Clock, Target, TrendingUp } from 'lucide-react';
 
 export default function Profile() {
   const navigate = useNavigate();
-  const user = useAuthStore((state) => state.user);
+  const { user, profile } = useAuth();
 
   React.useEffect(() => {
     if (!user) {
@@ -28,7 +28,7 @@ export default function Profile() {
             <User className="w-8 h-8 text-blue-600" />
           </div>
           <div>
-            <h2 className="text-2xl font-bold">{user?.fullName}</h2>
+            <h2 className="text-2xl font-bold">{profile?.full_name || user?.email?.split('@')[0]}</h2>
             <p className="text-gray-600">{user?.email}</p>
           </div>
         </div>
