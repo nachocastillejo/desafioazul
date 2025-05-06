@@ -20,8 +20,33 @@ import TestSimulator from '../components/TestSimulator';
 import SingleQuestionMode from '../components/SingleQuestionMode';
 import SimulacroFormativoCard from '../components/SimulacroFormativoCard';
 
+// Define interfaces for props to fix 'any' type errors and improve clarity
+interface TestCardProps {
+  title: string;
+  icon: React.ElementType;
+  onStart: () => void;
+  numberOfQuestions: number;
+  setNumberOfQuestions: (num: number) => void;
+  description?: string; // Optional description prop
+}
+
+interface SingleQuestionCardProps {
+  title: string;
+  icon: React.ElementType;
+  stats: {
+    correct: number;
+    incorrect: number;
+    unanswered: number;
+    totalCorrected: number;
+    finalScore: string;
+  };
+  onStart: () => void;
+  onResetStats: () => void;
+  description?: string;
+}
+
 // Componente para las tarjetas de test
-const TestCard = ({ title, icon: Icon, onStart, numberOfQuestions, setNumberOfQuestions }) => {
+const TestCard: React.FC<TestCardProps> = ({ title, icon: Icon, onStart, numberOfQuestions, setNumberOfQuestions, description }) => {
   return (
     <div className="w-full card flex flex-col p-4 sm:p-5 bg-white dark:bg-gray-800 shadow-md rounded-lg transition-all duration-300">
       {/* Encabezado interno con título e ícono */}
@@ -36,9 +61,9 @@ const TestCard = ({ title, icon: Icon, onStart, numberOfQuestions, setNumberOfQu
       {/* Explicación del test */}
       <div className="text-sm sm:text-base text-text-secondary dark:text-gray-400 mb-4 leading-snug">
         <p>
-          {title === 'Teoría'
+          {description ? description : (title === 'Teoría'
             ? 'El temario para el examen oficial de teoría de Policía Nacional Escala Básica consta de 45 temas divididos en ciencias jurídicas, sociales y técnico-científicas. Cada prueba tiene 100 preguntas en 50 minutos, y si eliges menos, el tiempo se ajustará proporcionalmente.'
-            : 'Simulacro del ejercicio 1 de aptitudes: evalúa razonamiento, comprensión y aptitudes numérica, verbal y espacial; el número de preguntas (4 opciones, 1 correcta) y el tiempo varían, ajustándose proporcionalmente si eliges menos preguntas.'}
+            : 'Simulacro del ejercicio 1 de aptitudes: evalúa razonamiento, comprensión y aptitudes numérica, verbal y espacial; el número de preguntas (4 opciones, 1 correcta) y el tiempo varían, ajustándose proporcionalmente si eliges menos preguntas.')}
         </p>
       </div>
       {/* Selector de número de preguntas */}
@@ -71,7 +96,7 @@ const TestCard = ({ title, icon: Icon, onStart, numberOfQuestions, setNumberOfQu
 };
 
 // Componente para las tarjetas de preguntas sueltas
-const SingleQuestionCard = ({ title, icon: Icon, stats, onStart, onResetStats, description }) => {
+const SingleQuestionCard: React.FC<SingleQuestionCardProps> = ({ title, icon: Icon, stats, onStart, onResetStats, description }) => {
   const [showResetConfirmation, setShowResetConfirmation] = useState(false);
   
   const correctPercent = stats.totalCorrected ? ((stats.correct / stats.totalCorrected) * 100).toFixed(0) : '0';
@@ -92,13 +117,13 @@ const SingleQuestionCard = ({ title, icon: Icon, stats, onStart, onResetStats, d
         <div className="w-8 h-8 sm:w-10 sm:h-10 bg-primary/10 dark:bg-primary/20 rounded-md flex items-center justify-center">
           <Icon className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
         </div>
-        <h2 className="text-xl font-bold text-text-primary dark:text-white">
+        <h2 className="text-lg sm:text-xl font-bold text-text-primary dark:text-white">
           {title}
         </h2>
       </div>
       {/* Descripción adicional */}
       {description && (
-        <p className="text-sm text-text-secondary dark:text-gray-400 mb-4">
+        <p className="text-sm sm:text-base text-text-secondary dark:text-gray-400 mb-4">
           {description}
         </p>
       )}
@@ -312,12 +337,16 @@ export default function QuestionView() {
         {/* 1. Tarjeta de Practica y mejora tus conocimientos */}
         <div className="w-full bg-white dark:bg-gray-800 p-5 rounded-xl shadow-md flex flex-col sm:flex-row items-center gap-6">
           <div className="flex-1 text-center sm:text-left">
-            <h2 className="text-xl sm:text-2xl font-bold text-text-primary dark:text-white">
-              Practica y mejora tus conocimientos
+            <h2 className="text-lg sm:text-xl font-bold text-text-primary dark:text-white">
+              Practica y supera tus límites
             </h2>
-            <p className="text-sm sm:text-base text-text-secondary dark:text-gray-400 mt-2">
-              Realiza tests personalizados para fortalecer tus conocimientos. Escoge el número de preguntas, simula condiciones de examen y repasa tus respuestas para aprender en cada intento.
-            </p>
+            <div className="text-sm sm:text-base text-text-secondary dark:text-gray-400 mt-2">
+              <ul className="list-disc list-outside ml-5 space-y-1">
+                <li>Realiza tests adaptados a tus necesidades para mejorar constantemente.</li>
+                <li>Elige el número de preguntas, simula las condiciones del examen o revisa tus respuestas para aprender de cada intento.</li>
+                <li>Cada práctica te acerca más a tu objetivo.</li>
+              </ul>
+            </div>
           </div>
           <div className="flex justify-center">
             <img
@@ -335,7 +364,7 @@ export default function QuestionView() {
           stats={singleQuestionStats}
           onStart={() => handleSingleQuestionStart('Psicotécnico')}
           onResetStats={resetSingleQuestionStats}
-          description="Resuelve preguntas individuales para mejorar tu desempeño y repasar conceptos clave."
+          description="Realiza preguntas de psicotécnicos de forma aleatoria, eligiendo qué categorías deseas practicar, sin límite de tiempo ni final. Ideal para reforzar tus conocimientos y mejorar a tu propio ritmo, ¡sin presiones!"
         />
 
         {/* 3. Tarjeta de Simulacros */}
@@ -345,6 +374,7 @@ export default function QuestionView() {
           numberOfQuestions={psicoNumQuestions}
           setNumberOfQuestions={setPsicoNumQuestions}
           onStart={() => handleTestStart('Psicotécnico')}
+          description="Crea tu propio simulacro de examen y haz de la práctica tu mejor aliada. Ajusta qué cantidad de preguntas deseas realizar, así como las áreas en las que quieras enfocarte para mejorar tus conocimientos. Cada pregunta tiene cuatro posibilidades de respuesta de las cuales solo una es correcta. ¡A por ello!"
         />
 
         {/* 4. Tarjeta de Simulacros Formativos */}

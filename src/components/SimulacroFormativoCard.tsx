@@ -108,7 +108,7 @@ const SimulacroFormativoCard: React.FC = () => {
       {/* Explicación breve */}
       <div className="text-sm sm:text-base text-text-secondary dark:text-gray-400 mb-4 leading-snug">
         <p>
-          Selecciona un simulacro para realizar un examen formativo basado en las preguntas que contengan ese simulacro.
+          El equipo de Desafío Azul subirá periódicamente exámenes formativos diseñados para que puedas practicar con pruebas similares a las de las convocatorias oficiales. Estos simulacros te permitirán familiarizarte con el formato y el nivel de dificultad de los exámenes reales, ayudándote a mejorar tu rendimiento y confianza para la fecha de la convocatoria.
         </p>
       </div>
       {/* Mostrar un botón por cada valor único de simulacros */}

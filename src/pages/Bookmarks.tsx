@@ -147,14 +147,22 @@ export default function Bookmarks() {
         <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary/10 dark:bg-primary/20 rounded-xl flex items-center justify-center">
           <Bookmark className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
         </div>
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-text-primary dark:text-white">
-            Preguntas Guardadas
-          </h1>
-          <p className="text-sm sm:text-base text-text-secondary dark:text-gray-400">
-            Revisa y gestiona tus preguntas guardadas
-          </p>
-        </div>
+        <h1 className="text-xl sm:text-2xl font-bold text-text-primary dark:text-white">
+          Preguntas Guardadas
+        </h1>
+      </div>
+
+      {/* Descriptive Box Card */}
+      <div className="w-full bg-white dark:bg-gray-800 p-5 rounded-xl shadow-md mb-6">
+        <h2 className="text-lg sm:text-xl font-bold text-text-primary dark:text-white mb-2">
+          Guarda tus preguntas y repásalas cuando quieras
+        </h2>
+        <ul className="list-disc list-outside ml-5 space-y-1 text-sm sm:text-base text-text-secondary dark:text-gray-400">
+          <li>
+            En este apartado podrás encontrar todas las preguntas que hayas decidido guardar durante tu práctica. Ya sea porque te resultaron difíciles, las consideraste interesantes o quieres revisarlas más tarde, aquí tendrás un espacio personalizado para acceder a ellas cuando lo necesites. 
+            ¡Una excelente manera de repasar y afianzar aquellas áreas que requieren más atención!
+          </li>
+        </ul>
       </div>
 
       {bookmarks.length === 0 ? (

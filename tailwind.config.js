@@ -12,9 +12,14 @@ export default {
         secondary: '#9333EA',
         'text-primary': '#1F2937',
         'text-secondary': '#6B7280',
+        'desafio-blue': '#1b58ab',
       },
       fontFamily: {
         sans: ['DM Sans', 'system-ui', 'sans-serif'],
+        montserrat: ['Montserrat', 'sans-serif'],
+        anton: ['Anton', 'sans-serif'],
+        'archivo-black': ['Archivo Black', 'sans-serif'],
+        'passion-one': ['Passion One', 'sans-serif'],
       },
       fontSize: {
         xs: ['12px', '16px'],
