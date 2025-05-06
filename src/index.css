@@ -1,0 +1,224 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap');
+
+:root {
+  --primary: #6366F1;
+  --primary-hover: #4F46E5;
+  --secondary: #9333EA;
+  --text-primary: #1F2937;
+  --text-secondary: #6B7280;
+  --bg-primary: #F9FAFB;
+  --bg-secondary: #F3F4F6;
+  --border: #E5E7EB;
+}
+
+/* Scroll minimalista pero visible para navegadores WebKit */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1); /* Fondo sutil para el track */
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.3);
+  border-radius: 3px;
+}
+
+/* Opcional: scroll minimalista para modo oscuro */
+@media (prefers-color-scheme: dark) {
+  ::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+  }
+  ::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.3);
+  }
+}
+
+@layer base {
+  html {
+    font-family: 'DM Sans', system-ui, sans-serif;
+    @apply text-base antialiased;
+    -webkit-tap-highlight-color: transparent;
+    min-height: 100%;
+    overscroll-behavior: auto;
+  }
+  
+  body {
+    @apply bg-gradient-to-br from-slate-100 to-white dark:from-gray-900 dark:to-gray-800 text-[15px] antialiased transition-colors overflow-x-hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    min-height: 100vh;
+    position: relative;
+  }
+
+  /* Si tienes definida la clase mobile-menu-open, asegúrate de que no impida el scroll */
+  .mobile-menu-open {
+    /* overflow: hidden; */
+  }
+
+  #root {
+    min-height: 100vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+    @apply scrollbar-thin scrollbar-track-transparent scrollbar-thumb-gray-200 hover:scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-700 dark:hover:scrollbar-thumb-gray-600;
+  }
+
+  .scrollbar-custom {
+    @apply scrollbar-thin scrollbar-track-transparent scrollbar-thumb-gray-200 hover:scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-700 dark:hover:scrollbar-thumb-gray-600;
+  }
+
+  .modal-scrollbar {
+    @apply scrollbar-thin scrollbar-track-transparent scrollbar-thumb-gray-200/50 hover:scrollbar-thumb-gray-300/50 dark:scrollbar-thumb-gray-700/50 dark:hover:scrollbar-thumb-gray-600/50;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold tracking-tight dark:text-white;
+  }
+
+  @media (max-width: 640px) {
+    button, 
+    [role="button"],
+    a {
+      @apply min-h-[44px] min-w-[44px];
+    }
+
+    input[type="checkbox"],
+    input[type="radio"] {
+      @apply min-h-[24px] min-w-[24px];
+    }
+  }
+}
+
+/* Clases personalizadas */
+
+.sidebar-link {
+  @apply flex items-center space-x-3 text-gray-700 dark:text-gray-300 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors;
+}
+
+.btn-primary {
+  @apply bg-[#6366F1] hover:bg-[#4F46E5] text-white font-medium px-4 py-2 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg hover:shadow-primary/20 active:scale-[0.98];
+}
+
+.btn-secondary {
+  @apply bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-medium px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 transition-all hover:shadow-md active:scale-[0.98];
+}
+
+.card {
+  @apply bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl shadow-xl border border-white/20 dark:border-gray-700/20 transition-all hover:shadow-2xl hover:shadow-primary/5 dark:hover:shadow-primary/10;
+}
+
+.input-field {
+  @apply w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366F1] focus:border-transparent transition-all bg-white dark:bg-gray-800 text-gray-900 dark:text-white;
+}
+
+/* Tipografía */
+.text-xs {
+  @apply text-[12px] leading-[16px];
+}
+
+.text-sm {
+  @apply text-[13px] leading-[18px];
+}
+
+.text-base {
+  @apply text-[15px] leading-[22px];
+}
+
+.text-lg {
+  @apply text-[16px] leading-[24px];
+}
+
+.text-xl {
+  @apply text-[18px] leading-[28px];
+}
+
+.text-2xl {
+  @apply text-[20px] leading-[30px];
+}
+
+.text-3xl {
+  @apply text-[24px] leading-[32px];
+}
+
+/* Modo oscuro */
+.dark .bg-primary\/10 {
+  @apply bg-primary/20;
+}
+
+.dark .bg-green-50 {
+  @apply bg-green-900/20;
+}
+
+.dark .bg-red-50 {
+  @apply bg-red-900/20;
+}
+
+.dark .bg-yellow-50 {
+  @apply bg-yellow-900/20;
+}
+
+.dark .bg-gray-50 {
+  @apply bg-gray-800;
+}
+
+.dark .text-green-700 {
+  @apply text-green-400;
+}
+
+.dark .text-red-700 {
+  @apply text-red-400;
+}
+
+.dark .text-yellow-700 {
+  @apply text-yellow-400;
+}
+
+.dark .text-gray-700 {
+  @apply text-gray-300;
+}
+
+.dark .text-text-primary {
+  @apply text-gray-100;
+}
+
+.dark .text-text-secondary {
+  @apply text-gray-400;
+}
+
+/* Transiciones suaves */
+.transition-theme {
+  @apply transition-all duration-200;
+}
+
+/* Animaciones */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-in {
+  animation: slideIn 0.3s ease-out forwards;
+}
+
+/* Hover */
+.hover-lift {
+  @apply transition-transform duration-200 hover:-translate-y-1;
+}
+
+/* Focus */
+.focus-ring {
+  @apply focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 dark:focus:ring-offset-gray-800;
+}
