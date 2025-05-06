@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Sidebar from './components/Sidebar';
 import Home from './pages/Home';
@@ -12,6 +12,12 @@ import Register from './pages/Register';
 import { Menu } from 'lucide-react';
 import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
+
+const Profile = lazy(() => import('./pages/Profile'));
+const LegalPage = lazy(() => import('./pages/LegalPage'));
+const PrivacyPolicyPage = lazy(() => import('./pages/PrivacyPolicyPage'));
+const CookiesPolicyPage = lazy(() => import('./pages/CookiesPolicyPage'));
+const PurchaseTermsPage = lazy(() => import('./pages/PurchaseTermsPage'));
 
 function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -29,71 +35,104 @@ function App() {
           <Route path="/register" element={<Register />} />
           
           {/* Rutas protegidas */}
-          <Route path="/" element={
-            <ProtectedRoute>
-              <AppLayout 
-                isSidebarOpen={isSidebarOpen} 
-                toggleSidebar={toggleSidebar}
-              >
-                <Home />
-              </AppLayout>
-            </ProtectedRoute>
-          } />
-          
-          <Route path="/test" element={
-            <ProtectedRoute>
-              <AppLayout 
-                isSidebarOpen={isSidebarOpen} 
-                toggleSidebar={toggleSidebar}
-              >
-                <QuestionView />
-              </AppLayout>
-            </ProtectedRoute>
-          } />
-          
-          <Route path="/calculadora" element={
-            <ProtectedRoute>
-              <AppLayout 
-                isSidebarOpen={isSidebarOpen} 
-                toggleSidebar={toggleSidebar}
-              >
-                <Calculator />
-              </AppLayout>
-            </ProtectedRoute>
-          } />
-          
-          <Route path="/progreso" element={
-            <ProtectedRoute>
-              <AppLayout 
-                isSidebarOpen={isSidebarOpen} 
-                toggleSidebar={toggleSidebar}
-              >
-                <Progress />
-              </AppLayout>
-            </ProtectedRoute>
-          } />
-
-          <Route path="/bookmarks" element={
-            <ProtectedRoute>
-              <AppLayout 
-                isSidebarOpen={isSidebarOpen} 
-                toggleSidebar={toggleSidebar}
-              >
-                <Bookmarks />
-              </AppLayout>
-            </ProtectedRoute>
-          } />
-          
-          <Route path="/admin/preguntas" element={
-            <ProtectedRoute>
-              <AppLayout 
-                isSidebarOpen={isSidebarOpen} 
-                toggleSidebar={toggleSidebar}
-              >
-                <AdminQuestions />
-              </AppLayout>
-            </ProtectedRoute>
-          } />
+          <Route
+            path="/"
+            element={(
+              <ProtectedRoute>
+                <AppLayout
+                  isSidebarOpen={isSidebarOpen}
+                  toggleSidebar={toggleSidebar}
+                >
+                  <Home />
+                </AppLayout>
+              </ProtectedRoute>
+            )}
+          />
+          <Route
+            path="/test"
+            element={(
+              <ProtectedRoute>
+                <AppLayout
+                  isSidebarOpen={isSidebarOpen}
+                  toggleSidebar={toggleSidebar}
+                >
+                  <QuestionView />
+                </AppLayout>
+              </ProtectedRoute>
+            )}
+          />
+          <Route
+            path="/calculadora"
+            element={(
+              <ProtectedRoute>
+                <AppLayout
+                  isSidebarOpen={isSidebarOpen}
+                  toggleSidebar={toggleSidebar}
+                >
+                  <Calculator />
+                </AppLayout>
+              </ProtectedRoute>
+            )}
+          />
+          <Route
+            path="/progreso"
+            element={(
+              <ProtectedRoute>
+                <AppLayout
+                  isSidebarOpen={isSidebarOpen}
+                  toggleSidebar={toggleSidebar}
+                >
+                  <Progress />
+                </AppLayout>
+              </ProtectedRoute>
+            )}
+          />
+          <Route
+            path="/bookmarks"
+            element={(
+              <ProtectedRoute>
+                <AppLayout
+                  isSidebarOpen={isSidebarOpen}
+                  toggleSidebar={toggleSidebar}
+                >
+                  <Bookmarks />
+                </AppLayout>
+              </ProtectedRoute>
+            )}
+          />
+          <Route
+            path="/admin/preguntas"
+            element={(
+              <ProtectedRoute>
+                <AppLayout
+                  isSidebarOpen={isSidebarOpen}
+                  toggleSidebar={toggleSidebar}
+                >
+                  <AdminQuestions />
+                </AppLayout>
+              </ProtectedRoute>
+            )}
+          />
+          <Route
+            path="/profile"
+            element={<Suspense fallback={<div>Loading...</div>}><ProtectedRoute><AppLayout isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar}><Profile /></AppLayout></ProtectedRoute></Suspense>}
+          />
+          <Route
+            path="/aviso-legal"
+            element={<Suspense fallback={<div>Loading...</div>}><AppLayout isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar}><LegalPage /></AppLayout></Suspense>}
+          />
+          <Route
+            path="/politica-de-privacidad"
+            element={<Suspense fallback={<div>Loading...</div>}><AppLayout isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar}><PrivacyPolicyPage /></AppLayout></Suspense>}
+          />
+          <Route
+            path="/politica-de-cookies"
+            element={<Suspense fallback={<div>Loading...</div>}><AppLayout isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar}><CookiesPolicyPage /></AppLayout></Suspense>}
+          />
+          <Route
+            path="/condiciones-generales-de-compra"
+            element={<Suspense fallback={<div>Loading...</div>}><AppLayout isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar}><PurchaseTermsPage /></AppLayout></Suspense>}
+          />
           
           {/* Redirigir rutas no encontradas */}
           <Route path="*" element={<Navigate to="/" replace />} />
