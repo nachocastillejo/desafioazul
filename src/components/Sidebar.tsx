@@ -11,7 +11,8 @@ import {
   TrendingUp,
   LogOut,
   Bookmark,
-  Info
+  Info,
+  Crown
 } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
 import { useTestStore } from '../lib/store';
@@ -140,6 +141,20 @@ export default function Sidebar({ onCloseMobile }: SidebarProps) {
             >
               <Bookmark className="w-5 h-5" />
               <span className="font-medium">Guardados</span>
+            </button>
+          </li>
+
+          <li>
+            <button
+              onClick={() => handleNavigation('/suscripcion')}
+              className={`w-full flex items-center space-x-3 p-3 rounded-xl transition-colors ${
+                location.pathname === '/suscripcion'
+                  ? 'bg-primary/10 dark:bg-primary/20 text-primary'
+                  : 'text-text-secondary dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
+              }`}
+            >
+              <Crown className="w-5 h-5" />
+              <span className="font-medium">Suscripción</span>
             </button>
           </li>
 

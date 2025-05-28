@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Brain, Target, User } from 'lucide-react';
+import { Brain, Target, User, Crown, Zap } from 'lucide-react';
 
 export default function Home() {
   return (
@@ -36,9 +36,50 @@ export default function Home() {
           </p>
           <Link
             to="/test"
-            className="inline-flex items-center justify-center px-6 py-3 bg-primary hover:bg-primary-hover text-white font-medium rounded-xl transition-all duration-300 shadow-lg shadow-primary/20"
+            className="inline-flex items-center justify-center px-6 py-3 bg-gradient-to-r from-primary to-blue-600 hover:from-primary-hover hover:to-blue-700 text-white font-medium rounded-xl transition-all duration-300 shadow-lg shadow-primary/20"
           >
             Iniciar Test
+          </Link>
+        </div>
+      </div>
+
+      {/* Sección de Suscripción Premium */}
+      <div className="card p-6 sm:p-8 mb-8 bg-gradient-to-br from-blue-50 via-primary/5 to-blue-100/50 dark:from-blue-900/20 dark:via-primary/10 dark:to-blue-800/20 border border-blue-100 dark:border-blue-800/30 shadow-2xl shadow-blue-500/10 dark:shadow-blue-500/20">
+        <div className="max-w-3xl mx-auto text-center">
+          <div className="flex justify-center mb-4">
+            <div className="w-16 h-16 bg-gradient-to-r from-primary to-blue-600 rounded-full flex items-center justify-center">
+              <Crown className="w-8 h-8 text-white" />
+            </div>
+          </div>
+          <h2 className="text-2xl sm:text-3xl font-bold text-text-primary dark:text-white mb-4">
+            Desbloquea todo el potencial
+          </h2>
+          <p className="text-text-secondary dark:text-gray-400 text-base sm:text-lg mb-6">
+            Actualiza a Premium por solo €9.99/mes y accede a todas las funcionalidades avanzadas para maximizar tu preparación.
+          </p>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-6">
+            <div className="flex items-center space-x-2 text-sm text-text-secondary dark:text-gray-400">
+              <Zap className="w-4 h-4 text-primary" />
+              <span>Tests ilimitados</span>
+            </div>
+            <div className="flex items-center space-x-2 text-sm text-text-secondary dark:text-gray-400">
+              <Target className="w-4 h-4 text-primary" />
+              <span>Análisis avanzado</span>
+            </div>
+            <div className="flex items-center space-x-2 text-sm text-text-secondary dark:text-gray-400">
+              <Brain className="w-4 h-4 text-primary" />
+              <span>Simulacros cronometrados</span>
+            </div>
+          </div>
+          <div className="mb-6">
+            <span className="text-3xl font-bold text-primary">€9.99</span>
+            <span className="text-text-secondary dark:text-gray-400 ml-1">/mes</span>
+          </div>
+          <Link
+            to="/suscripcion"
+            className="inline-flex items-center justify-center px-8 py-3 bg-gradient-to-r from-primary to-blue-600 hover:from-primary-hover hover:to-blue-700 text-white font-medium rounded-xl transition-all duration-300 shadow-lg shadow-primary/20"
+          >
+            Actualizar a Premium
           </Link>
         </div>
       </div>

@@ -1,19 +1,48 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Shield, Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { 
+  Shield, 
+  Mail, 
+  Lock, 
+  Eye, 
+  EyeOff, 
+  Brain, 
+  Target, 
+  TrendingUp, 
+  Clock,
+  CheckCircle,
+  Users,
+  Award,
+  Zap,
+  ArrowRight,
+  User
+} from 'lucide-react';
+
+type AuthMode = 'login' | 'register';
 
 export default function Login() {
   const navigate = useNavigate();
-  const { signIn } = useAuth();
+  const { signIn, signUp } = useAuth();
 
+  const [authMode, setAuthMode] = useState<AuthMode>('login');
+  const [showAuthForm, setShowAuthForm] = useState(false);
+  
+  // Estados para login
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  
+  // Estados para registro
+  const [fullName, setFullName] = useState('');
+  const [registerEmail, setRegisterEmail] = useState('');
+  const [registerPassword, setRegisterPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
@@ -35,161 +64,507 @@ export default function Login() {
     }
   };
 
-  return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-slate-100 to-white dark:from-gray-900 dark:to-gray-800">
-      <div className="w-full max-w-md">
-        <div className="card p-8 bg-white dark:bg-gray-800 shadow-xl rounded-xl">
-          {/* Logo y título */}
-          <div className="text-center mb-8">
-            <div className="flex justify-center mb-4">
-              <div className="w-16 h-16 bg-primary/10 dark:bg-primary/20 rounded-full flex items-center justify-center">
-                <Shield className="w-8 h-8 text-primary" />
-              </div>
-            </div>
-            <h1 className="text-2xl font-bold text-text-primary dark:text-white">
-              Iniciar Sesión
-            </h1>
-            <p className="text-text-secondary dark:text-gray-400 mt-2">
-              Accede a tu cuenta para continuar
-            </p>
-          </div>
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
 
-          {/* Mensaje de error */}
-          {error && (
-            <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-700 dark:text-red-400 text-sm">
-              {error}
-            </div>
-          )}
+    if (registerPassword !== confirmPassword) {
+      setError('Las contraseñas no coinciden');
+      return;
+    }
 
-          {/* Formulario */}
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <label
-                htmlFor="email"
-                className="block text-sm font-medium text-text-primary dark:text-white mb-2"
-              >
-                Correo electrónico
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Mail className="h-5 w-5 text-text-secondary dark:text-gray-400" />
+    if (registerPassword.length < 6) {
+      setError('La contraseña debe tener al menos 6 caracteres');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const { error } = await signUp(registerEmail, registerPassword, fullName);
+      
+      if (error) {
+        setError(error.message || 'Error al registrar usuario');
+        return;
+      }
+      
+      navigate('/');
+    } catch (err) {
+      setError('Error inesperado al registrar usuario');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const features = [
+    {
+      icon: <Brain className="w-6 h-6" />,
+      title: "Tests Inteligentes",
+      description: "Preguntas adaptadas a tu nivel con análisis de rendimiento en tiempo real"
+    },
+    {
+      icon: <Target className="w-6 h-6" />,
+      title: "Preparación Personalizada", 
+      description: "Planes de estudio adaptados a tus fortalezas y áreas de mejora"
+    },
+    {
+      icon: <TrendingUp className="w-6 h-6" />,
+      title: "Seguimiento Detallado",
+      description: "Estadísticas avanzadas para monitorear tu progreso día a día"
+    },
+    {
+      icon: <Clock className="w-6 h-6" />,
+      title: "Simulacros Cronometrados",
+      description: "Practica en condiciones reales de examen para optimizar tu tiempo"
+    }
+  ];
+
+  const stats = [
+    { number: "1,000+", label: "Preguntas disponibles" },
+    { number: "Nuevo", label: "Plataforma innovadora" },
+    { number: "100%", label: "Enfoque personalizado" },
+    { number: "24/7", label: "Acceso disponible" }
+  ];
+
+  if (showAuthForm) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-slate-100 to-white dark:from-gray-900 dark:to-gray-800">
+        <div className="w-full max-w-md">
+          <div className="card p-8 bg-white dark:bg-gray-800 shadow-xl rounded-xl">
+            {/* Header */}
+            <div className="text-center mb-8">
+              <div className="flex justify-center mb-4">
+                <div className="w-16 h-16 bg-primary/10 dark:bg-primary/20 rounded-full flex items-center justify-center">
+                  <Shield className="w-8 h-8 text-primary" />
                 </div>
-                <input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="input-field-icon"
-                  placeholder="tu@email.com"
-                  required
-                />
               </div>
+              <h1 className="text-2xl font-bold text-text-primary dark:text-white">
+                {authMode === 'login' ? 'Iniciar Sesión' : 'Crear Cuenta'}
+              </h1>
+              <p className="text-text-secondary dark:text-gray-400 mt-2">
+                {authMode === 'login' 
+                  ? 'Accede a tu cuenta para continuar' 
+                  : 'Regístrate para acceder a todos los recursos'
+                }
+              </p>
             </div>
 
-            <div>
-              <label
-                htmlFor="password"
-                className="block text-sm font-medium text-text-primary dark:text-white mb-2"
-              >
-                Contraseña
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Lock className="h-5 w-5 text-text-secondary dark:text-gray-400" />
+            {/* Error Message */}
+            {error && (
+              <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-700 dark:text-red-400 text-sm">
+                {error}
+              </div>
+            )}
+
+            {/* Forms */}
+            {authMode === 'login' ? (
+              <form onSubmit={handleLogin} className="space-y-6">
+                <div>
+                  <label htmlFor="email" className="block text-sm font-medium text-text-primary dark:text-white mb-2">
+                    Correo electrónico
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <Mail className="h-5 w-5 text-text-secondary dark:text-gray-400" />
+                    </div>
+                    <input
+                      id="email"
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="input-field-icon"
+                      placeholder="tu@email.com"
+                      required
+                    />
+                  </div>
                 </div>
-                <input
-                  id="password"
-                  type={showPassword ? 'text' : 'password'}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="input-field-icon pr-12"
-                  placeholder="••••••••"
-                  required
-                />
+
+                <div>
+                  <label htmlFor="password" className="block text-sm font-medium text-text-primary dark:text-white mb-2">
+                    Contraseña
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <Lock className="h-5 w-5 text-text-secondary dark:text-gray-400" />
+                    </div>
+                    <input
+                      id="password"
+                      type={showPassword ? 'text' : 'password'}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="input-field-icon pr-12"
+                      placeholder="••••••••"
+                      required
+                    />
+                    <button
+                      type="button"
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      {showPassword ? (
+                        <EyeOff className="h-5 w-5 text-text-secondary dark:text-gray-400" />
+                      ) : (
+                        <Eye className="h-5 w-5 text-text-secondary dark:text-gray-400" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+
                 <button
-                  type="button"
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                  onClick={() => setShowPassword(!showPassword)}
+                  type="submit"
+                  disabled={loading}
+                  className="w-full btn-primary py-3 rounded-xl flex items-center justify-center"
                 >
-                  {showPassword ? (
-                    <EyeOff className="h-5 w-5 text-text-secondary dark:text-gray-400" />
+                  {loading ? (
+                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
                   ) : (
-                    <Eye className="h-5 w-5 text-text-secondary dark:text-gray-400" />
+                    'Iniciar Sesión'
                   )}
                 </button>
-              </div>
-            </div>
+              </form>
+            ) : (
+              <form onSubmit={handleRegister} className="space-y-6">
+                <div>
+                  <label htmlFor="fullName" className="block text-sm font-medium text-text-primary dark:text-white mb-2">
+                    Nombre completo
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <User className="h-5 w-5 text-text-secondary dark:text-gray-400" />
+                    </div>
+                    <input
+                      id="fullName"
+                      type="text"
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      className="input-field-icon"
+                      placeholder="Tu nombre completo"
+                      required
+                    />
+                  </div>
+                </div>
 
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <input
-                  id="remember-me"
-                  name="remember-me"
-                  type="checkbox"
-                  className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
-                />
-                <label
-                  htmlFor="remember-me"
-                  className="ml-2 block text-sm text-text-secondary dark:text-gray-400"
+                <div>
+                  <label htmlFor="registerEmail" className="block text-sm font-medium text-text-primary dark:text-white mb-2">
+                    Correo electrónico
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <Mail className="h-5 w-5 text-text-secondary dark:text-gray-400" />
+                    </div>
+                    <input
+                      id="registerEmail"
+                      type="email"
+                      value={registerEmail}
+                      onChange={(e) => setRegisterEmail(e.target.value)}
+                      className="input-field-icon"
+                      placeholder="tu@email.com"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="registerPassword" className="block text-sm font-medium text-text-primary dark:text-white mb-2">
+                    Contraseña
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <Lock className="h-5 w-5 text-text-secondary dark:text-gray-400" />
+                    </div>
+                    <input
+                      id="registerPassword"
+                      type={showPassword ? "text" : "password"}
+                      value={registerPassword}
+                      onChange={(e) => setRegisterPassword(e.target.value)}
+                      className="input-field-icon pr-12"
+                      placeholder="••••••••"
+                      required
+                    />
+                    <button
+                      type="button"
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      {showPassword ? (
+                        <EyeOff className="h-5 w-5 text-text-secondary dark:text-gray-400" />
+                      ) : (
+                        <Eye className="h-5 w-5 text-text-secondary dark:text-gray-400" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="confirmPassword" className="block text-sm font-medium text-text-primary dark:text-white mb-2">
+                    Confirmar contraseña
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <Lock className="h-5 w-5 text-text-secondary dark:text-gray-400" />
+                    </div>
+                    <input
+                      id="confirmPassword"
+                      type={showPassword ? "text" : "password"}
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      className="input-field-icon"
+                      placeholder="••••••••"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full btn-primary py-3 rounded-xl flex items-center justify-center"
                 >
-                  Recordarme
-                </label>
-              </div>
+                  {loading ? (
+                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                  ) : (
+                    'Crear Cuenta'
+                  )}
+                </button>
+              </form>
+            )}
 
-              <div className="text-sm">
-                <a
-                  href="#"
+            {/* Switch between login/register */}
+            <div className="mt-6 text-center">
+              <p className="text-text-secondary dark:text-gray-400">
+                {authMode === 'login' ? '¿No tienes una cuenta?' : '¿Ya tienes una cuenta?'}{' '}
+                <button
+                  onClick={() => setAuthMode(authMode === 'login' ? 'register' : 'login')}
                   className="font-medium text-primary hover:text-primary-hover"
                 >
-                  ¿Olvidaste tu contraseña?
-                </a>
+                  {authMode === 'login' ? 'Regístrate' : 'Inicia sesión'}
+                </button>
+              </p>
+            </div>
+
+            {/* Back to landing */}
+            <div className="mt-4 text-center">
+              <button
+                onClick={() => setShowAuthForm(false)}
+                className="text-sm text-text-secondary dark:text-gray-400 hover:text-text-primary dark:hover:text-white"
+              >
+                ← Volver
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-100 to-white dark:from-gray-900 dark:to-gray-800">
+      {/* Hero Section */}
+      <div className="relative overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-20">
+          <div className="text-center mb-16">
+            {/* Logo */}
+            <div className="flex justify-center mb-8">
+              <img 
+                src="/images/logo modo claro.png" 
+                alt="Desafío Azul Logo Claro"
+                className="h-20 sm:h-24 block dark:hidden"
+              />
+              <img 
+                src="/images/logo modo oscuro.png" 
+                alt="Desafío Azul Logo Oscuro"
+                className="h-20 sm:h-24 hidden dark:block"
+              />
+            </div>
+
+            {/* Main Headline */}
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-text-primary dark:text-white mb-6">
+              Tu plaza comienza aquí:
+              <span className="block text-gradient">visualiza, actúa y vence</span>
+            </h1>
+            
+            <p className="text-xl text-text-secondary dark:text-gray-400 max-w-3xl mx-auto mb-8">
+              Una nueva plataforma diseñada para revolucionar tu preparación de oposiciones. 
+              Tests adaptativos, análisis inteligente y seguimiento personalizado para maximizar tus resultados.
+              <span className="block mt-2 text-lg font-medium text-primary">
+                Regístrate gratis y prueba la plataforma. Después, €9.99/mes para acceso completo.
+              </span>
+            </p>
+
+            {/* CTA Buttons */}
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+              <button
+                onClick={() => {
+                  setAuthMode('register');
+                  setShowAuthForm(true);
+                }}
+                className="w-full sm:w-auto px-8 py-4 bg-primary hover:bg-primary-hover text-white font-semibold rounded-xl transition-all duration-300 shadow-lg shadow-primary/20 flex items-center justify-center space-x-2"
+              >
+                <span>Registrarse Gratis</span>
+                <ArrowRight className="w-5 h-5" />
+              </button>
+              <button
+                onClick={() => {
+                  setAuthMode('login');
+                  setShowAuthForm(true);
+                }}
+                className="w-full sm:w-auto px-8 py-4 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-text-primary dark:text-white font-semibold rounded-xl transition-all duration-300 shadow-lg border border-gray-200 dark:border-gray-700"
+              >
+                Iniciar Sesión
+              </button>
+            </div>
+
+            {/* Pricing info */}
+            <div className="mt-8 text-center">
+              <p className="text-sm text-text-secondary dark:text-gray-400">
+                ✓ Registro gratuito • ✓ Prueba sin compromiso • ✓ Después €9.99/mes
+              </p>
+            </div>
+          </div>
+
+          {/* Stats */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 mb-20">
+            {stats.map((stat, index) => (
+              <div key={index} className="text-center">
+                <div className="text-3xl lg:text-4xl font-bold text-primary mb-2">
+                  {stat.number}
+                </div>
+                <div className="text-text-secondary dark:text-gray-400">
+                  {stat.label}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Features Section */}
+      <div className="py-20 bg-white/50 dark:bg-gray-800/50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl lg:text-4xl font-bold text-text-primary dark:text-white mb-4">
+              Todo lo que necesitas para triunfar
+            </h2>
+            <p className="text-xl text-text-secondary dark:text-gray-400 max-w-2xl mx-auto">
+              Herramientas modernas diseñadas específicamente para la preparación de oposiciones
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {features.map((feature, index) => (
+              <div key={index} className="card p-6 text-center hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+                <div className="w-12 h-12 bg-primary/10 dark:bg-primary/20 rounded-xl flex items-center justify-center mx-auto mb-4">
+                  <div className="text-primary">
+                    {feature.icon}
+                  </div>
+                </div>
+                <h3 className="text-lg font-semibold text-text-primary dark:text-white mb-3">
+                  {feature.title}
+                </h3>
+                <p className="text-text-secondary dark:text-gray-400">
+                  {feature.description}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Benefits Section */}
+      <div className="py-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <div>
+              <h2 className="text-3xl lg:text-4xl font-bold text-text-primary dark:text-white mb-6">
+                Preparación inteligente, resultados reales
+              </h2>
+              <p className="text-lg text-text-secondary dark:text-gray-400 mb-8">
+                Nuestra plataforma utiliza tecnología moderna para adaptar el contenido a tu nivel 
+                y ritmo de aprendizaje, optimizando tu tiempo de estudio.
+              </p>
+              
+              <div className="space-y-4">
+                {[
+                  "Tests adaptativos que se ajustan a tu nivel",
+                  "Análisis detallado de tu rendimiento",
+                  "Simulacros en condiciones reales de examen",
+                  "Seguimiento de progreso en tiempo real"
+                ].map((benefit, index) => (
+                  <div key={index} className="flex items-center space-x-3">
+                    <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
+                    <span className="text-text-secondary dark:text-gray-400">{benefit}</span>
+                  </div>
+                ))}
               </div>
             </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full btn-primary py-3 rounded-xl flex items-center justify-center"
-            >
-              {loading ? (
-                <svg
-                  className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  ></circle>
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  ></path>
-                </svg>
-              ) : (
-                'Iniciar Sesión'
-              )}
-            </button>
-          </form>
-
-          {/* Enlace a registro */}
-          <div className="mt-6 text-center">
-            <p className="text-text-secondary dark:text-gray-400">
-              ¿No tienes una cuenta?{' '}
-              <Link
-                to="/register"
-                className="font-medium text-primary hover:text-primary-hover"
-              >
-                Regístrate
-              </Link>
-            </p>
+            <div className="relative">
+              <div className="card p-8 bg-gradient-to-br from-primary/5 to-blue-500/5 dark:from-primary/10 dark:to-blue-500/10">
+                <div className="text-center">
+                  <div className="w-16 h-16 bg-primary/10 dark:bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Award className="w-8 h-8 text-primary" />
+                  </div>
+                  <h3 className="text-xl font-bold text-text-primary dark:text-white mb-4">
+                    Prueba gratis, después €9.99/mes
+                  </h3>
+                  <p className="text-text-secondary dark:text-gray-400 mb-4">
+                    Regístrate gratis y accede a contenido básico. La suscripción premium incluye:
+                  </p>
+                  <div className="text-left mb-6 space-y-2">
+                    <div className="flex items-center space-x-2 text-sm text-text-secondary dark:text-gray-400">
+                      <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
+                      <span>Acceso a todas las preguntas</span>
+                    </div>
+                    <div className="flex items-center space-x-2 text-sm text-text-secondary dark:text-gray-400">
+                      <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
+                      <span>Tests personalizados ilimitados</span>
+                    </div>
+                    <div className="flex items-center space-x-2 text-sm text-text-secondary dark:text-gray-400">
+                      <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
+                      <span>Análisis detallado de progreso</span>
+                    </div>
+                    <div className="flex items-center space-x-2 text-sm text-text-secondary dark:text-gray-400">
+                      <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
+                      <span>Simulacros cronometrados</span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setAuthMode('register');
+                      setShowAuthForm(true);
+                    }}
+                    className="w-full btn-primary py-3 rounded-xl flex items-center justify-center space-x-2"
+                  >
+                    <span>Probar Gratis</span>
+                    <Zap className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
+        </div>
+      </div>
+
+      {/* Final CTA */}
+      <div className="py-20 bg-gradient-to-r from-primary/5 to-blue-500/5 dark:from-primary/10 dark:to-blue-500/10">
+        <div className="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
+          <h2 className="text-3xl lg:text-4xl font-bold text-text-primary dark:text-white mb-4">
+            ¿Listo para conseguir tu plaza?
+          </h2>
+          <p className="text-xl text-text-secondary dark:text-gray-400 mb-8">
+            Regístrate gratis y comienza tu preparación. Actualiza a premium cuando estés listo.
+          </p>
+          <button
+            onClick={() => {
+              setAuthMode('register');
+              setShowAuthForm(true);
+            }}
+            className="px-8 py-4 bg-primary hover:bg-primary-hover text-white font-semibold rounded-xl transition-all duration-300 shadow-lg shadow-primary/20 inline-flex items-center space-x-2"
+          >
+            <span>Registrarse Gratis</span>
+            <ArrowRight className="w-5 h-5" />
+          </button>
         </div>
       </div>
     </div>

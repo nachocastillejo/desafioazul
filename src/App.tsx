@@ -9,6 +9,7 @@ import Bookmarks from './pages/Bookmarks';
 import AdminQuestions from './pages/AdminQuestions';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import Subscription from './pages/Subscription';
 import { Menu } from 'lucide-react';
 import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -20,7 +21,7 @@ const PrivacyPolicyPage = lazy(() => import('./pages/PrivacyPolicyPage'));
 const CookiesPolicyPage = lazy(() => import('./pages/CookiesPolicyPage'));
 const PurchaseTermsPage = lazy(() => import('./pages/PurchaseTermsPage'));
 const FaqPage = lazy(() => import('./pages/FaqPage'));
-// const SettingsPage = lazy(() => import('./pages/SettingsPage')); // Removed due to missing file
+const SettingsPage = lazy(() => import('./pages/SettingsPage'));
 
 function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -36,6 +37,7 @@ function App() {
           {/* Rutas públicas */}
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/suscripcion" element={<Subscription />} />
           
           {/* Rutas protegidas */}
           <Route
@@ -142,7 +144,7 @@ function App() {
           />
           <Route
             path="/ajustes"
-            element={<Suspense fallback={<div>Loading...</div>}><ProtectedRoute><AppLayout isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar}><div>Settings Page Placeholder</div></AppLayout></ProtectedRoute></Suspense>}
+            element={<Suspense fallback={<div>Loading...</div>}><ProtectedRoute><AppLayout isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar}><SettingsPage /></AppLayout></ProtectedRoute></Suspense>}
           />
           
           {/* Redirigir rutas no encontradas */}
