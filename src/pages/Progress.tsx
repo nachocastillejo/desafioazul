@@ -9,7 +9,9 @@ import {
   Title,
   Tooltip,
   Legend,
-  Filler
+  Filler,
+  TooltipItem,
+  ChartOptions
 } from 'chart.js';
 import {
   TrendingUp,
@@ -39,15 +41,59 @@ ChartJS.register(
   Filler
 );
 
+// Define interfaces for cleaner type management
+interface DropdownOption {
+  value: string;
+  label: string;
+}
+
+interface DropdownProps {
+  options: DropdownOption[];
+  value: string;
+  onChange: (value: string) => void;
+  isDarkMode: boolean;
+}
+
+interface TestResult {
+  completed_at: string; // Assuming it's a date string
+  test_type: 'Teoría' | 'Psicotécnico' | string; // Or a more general string if other types exist
+  score: number;
+  time_taken: string;
+  correct_answers: number;
+  incorrect_answers: number;
+  // Add any other properties that result objects might have
+}
+
+interface AreaStat {
+  topic: string;
+  score: number;
+  questions_correct: number;
+  questions_seen: number;
+  type: 'Teoría' | 'Psicotécnico' | string; // Match TestResult['test_type']
+}
+
+interface EvolutionData {
+  labels: string[];
+  scores: number[];
+  types?: Array<'Teoría' | 'Psicotécnico' | string>;
+}
+
+interface StatsData {
+  lastResults: TestResult[];
+  evolutionData: EvolutionData;
+  strengthAreas: AreaStat[];
+  improvementAreas: AreaStat[];
+}
+
 // Componente Dropdown personalizado
-const Dropdown = ({ options, value, onChange, isDarkMode }) => {
+const Dropdown: React.FC<DropdownProps> = ({ options, value, onChange, isDarkMode }) => {
   const [open, setOpen] = useState(false);
-  const dropdownRef = useRef(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Cierra el dropdown al hacer clic fuera
   useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         setOpen(false);
       }
     };
@@ -66,7 +112,7 @@ const Dropdown = ({ options, value, onChange, isDarkMode }) => {
         } ${open ? 'ring-2 ring-primary' : ''}`}
       >
         <Filter className="w-4 h-4 text-current" />
-        <span className="text-sm">{selectedOption.label}</span>
+        <span className="text-sm">{selectedOption ? selectedOption.label : 'Select...'}</span>
         <ChevronDown className="w-4 h-4 text-current" />
       </button>
       {open && (
@@ -75,7 +121,7 @@ const Dropdown = ({ options, value, onChange, isDarkMode }) => {
             isDarkMode ? 'bg-gray-800' : 'bg-white'
           }`}
         >
-          {options.map((option) => (
+          {options.map((option: DropdownOption) => (
             <div
               key={option.value}
               onClick={() => {
@@ -135,7 +181,7 @@ export default function Progress() {
   }, [testTypeFilter]);
 
   // Filtro de datos según el tipo de test seleccionado
-  const filteredResults = stats.lastResults.filter(result => 
+  const filteredResults: TestResult[] = stats.lastResults.filter((result: TestResult) => 
     testTypeFilter === 'all' || result.test_type === testTypeFilter
   );
 
@@ -154,9 +200,9 @@ export default function Progress() {
   };
 
   // Función actualizada para calcular el tiempo promedio con segundos
-  function calculateAverageTime(tests) {
-    const totalTimeInSeconds = tests.reduce((sum, test) => {
-      const timeString = test.time_taken;
+  function calculateAverageTime(tests: TestResult[]) {
+    const totalTimeInSeconds = tests.reduce((sum: number, test: TestResult) => {
+      const timeString = test.time_taken || "";
       let seconds = 0;
       const hoursMatch = timeString.match(/(\d+)H/i);
       if (hoursMatch) {
@@ -186,9 +232,10 @@ export default function Progress() {
   }
 
   // Preparar datos para el gráfico según el filtro
-  const filteredEvolutionData = {
+  const filteredEvolutionData: EvolutionData = {
     labels: [],
-    scores: []
+    scores: [],
+    types: []
   };
 
   if (stats.evolutionData.labels.length > 0) {
@@ -197,7 +244,7 @@ export default function Progress() {
     const evolutionWithTypes = stats.evolutionData.labels.map((label, index) => ({
       label,
       score: stats.evolutionData.scores[index],
-      type: stats.evolutionData.types?.[index] || 'all'
+      type: stats.evolutionData.types?.[index] || 'all' // Default to 'all' if type is missing
     }));
     
     console.log('[Progress] Datos de evolución con tipos:', evolutionWithTypes);
@@ -210,6 +257,7 @@ export default function Progress() {
   
     filteredEvolutionData.labels = filteredEvolution.map(item => item.label);
     filteredEvolutionData.scores = filteredEvolution.map(item => item.score);
+    filteredEvolutionData.types = filteredEvolution.map(item => item.type as ('Teoría' | 'Psicotécnico' | 'all'));
   }
 
   const chartData = {
@@ -219,11 +267,11 @@ export default function Progress() {
         label: 'Puntuación',
         data: filteredEvolutionData.scores.slice(-testsCount),
         fill: true,
-        borderColor: '#6366F1',
-        backgroundColor: 'rgba(99, 102, 241, 0.1)',
+        borderColor: '#004cac',
+        backgroundColor: 'rgba(0, 76, 172, 0.1)',
         tension: 0.4,
         pointRadius: 6,
-        pointBackgroundColor: '#6366F1',
+        pointBackgroundColor: '#004cac',
         pointBorderColor: isDarkMode ? '#1F2937' : '#fff',
         pointBorderWidth: 2,
         pointHoverRadius: 8,
@@ -231,7 +279,7 @@ export default function Progress() {
     ]
   };
 
-  const chartOptions = {
+  const chartOptions: ChartOptions<'line'> = { // Explicitly type chartOptions
     responsive: true,
     maintainAspectRatio: false,
     layout: {
@@ -249,7 +297,7 @@ export default function Progress() {
         bodyColor: isDarkMode ? '#F9FAFB' : '#1F2937',
         borderColor: isDarkMode ? '#4B5563' : '#E5E7EB',
         borderWidth: 1,
-        borderRadius: 8,
+        cornerRadius: 8,
         padding: 12,
         displayColors: false,
         titleFont: {
@@ -260,7 +308,7 @@ export default function Progress() {
           size: 12
         },
         callbacks: {
-          label: (context) => {
+          label: (context: TooltipItem<'line'>) => {
             const score = context.parsed.y.toFixed(2);
             return `Puntuación: ${score}`;
           }
@@ -294,12 +342,12 @@ export default function Progress() {
     },
     interaction: {
       intersect: false,
-      mode: 'index'
+      mode: 'index' as 'index' // Added 'as const' for stricter typing if needed, or 'as 'index''
     }
   };
 
   // Opciones para el dropdown de tipo de test actualizadas
-  const testOptions = [
+  const testOptions: DropdownOption[] = [
     { value: 'all', label: 'Todos los tests' },
     { value: 'Teoría', label: 'Solo Teoría' },
     { value: 'Psicotécnico', label: 'Solo Psicotécnicos' }
@@ -313,13 +361,13 @@ export default function Progress() {
   console.log('[Progress] Áreas de fortaleza disponibles:', stats.strengthAreas);
   console.log('[Progress] Áreas de mejora disponibles:', stats.improvementAreas);
   
-  const filteredStrengthAreas = stats.strengthAreas.filter(area => {
+  const filteredStrengthAreas: AreaStat[] = stats.strengthAreas.filter((area: AreaStat) => {
     const matches = testTypeFilter === 'all' || area.type === testTypeFilter;
     console.log(`[Progress] Área fuerte "${area.topic}" (tipo: ${area.type}) ${matches ? 'coincide' : 'no coincide'} con filtro ${testTypeFilter}`);
     return matches;
   });
   
-  const filteredImprovementAreas = stats.improvementAreas.filter(area => {
+  const filteredImprovementAreas: AreaStat[] = stats.improvementAreas.filter((area: AreaStat) => {
     const matches = testTypeFilter === 'all' || area.type === testTypeFilter;
     console.log(`[Progress] Área de mejora "${area.topic}" (tipo: ${area.type}) ${matches ? 'coincide' : 'no coincide'} con filtro ${testTypeFilter}`);
     return matches;
@@ -390,8 +438,8 @@ export default function Progress() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         <div className="card p-4 sm:p-6">
           <div className="flex items-center space-x-3 mb-2 sm:mb-3">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center">
-              <Target className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 dark:text-blue-400" />
+            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-primary/10 dark:bg-primary/20 rounded-xl flex items-center justify-center">
+              <Target className="w-4 h-4 sm:w-5 sm:h-5 text-primary dark:text-primary" />
             </div>
             <div>
               <p className="text-xs sm:text-sm text-text-secondary dark:text-gray-400">Tests Completados</p>
@@ -404,8 +452,8 @@ export default function Progress() {
 
         <div className="card p-4 sm:p-6">
           <div className="flex items-center space-x-3 mb-2 sm:mb-3">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-purple-100 dark:bg-purple-900/30 rounded-xl flex items-center justify-center">
-              <Brain className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600 dark:text-purple-400" />
+            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-primary/10 dark:bg-primary/20 rounded-xl flex items-center justify-center">
+              <Brain className="w-4 h-4 sm:w-5 sm:h-5 text-primary dark:text-primary" />
             </div>
             <div>
               <p className="text-xs sm:text-sm text-text-secondary dark:text-gray-400">Nota Media</p>
@@ -498,7 +546,7 @@ export default function Progress() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredResults.slice(0, 5).map((result, index) => (
+                  {filteredResults.slice(0, 5).map((result: TestResult, index) => (
                     <tr
                       key={index}
                       className="border-b border-gray-100 dark:border-gray-700 last:border-0"
@@ -557,7 +605,7 @@ export default function Progress() {
               </h3>
               <div className="space-y-2">
                 {filteredStrengthAreas.length > 0 ? (
-                  filteredStrengthAreas.map((area, index) => (
+                  filteredStrengthAreas.map((area: AreaStat, index) => (
                     <div key={index} className="bg-green-50 dark:bg-green-900/20 p-2 rounded-lg">
                       <div className="flex justify-between items-center">
                         <span className="text-xs font-medium text-text-primary dark:text-white">
@@ -589,7 +637,7 @@ export default function Progress() {
               </h3>
               <div className="space-y-2">
                 {filteredImprovementAreas.length > 0 ? (
-                  filteredImprovementAreas.map((area, index) => (
+                  filteredImprovementAreas.map((area: AreaStat, index) => (
                     <div key={index} className="bg-orange-50 dark:bg-orange-900/20 p-2 rounded-lg">
                       <div className="flex justify-between items-center">
                         <span className="text-xs font-medium text-text-primary dark:text-white">

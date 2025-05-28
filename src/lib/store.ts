@@ -13,14 +13,15 @@ export interface Question {
   category: string;
   topic: string;
   text: string;
-  // Las opciones pueden ser simples strings o un objeto con texto e imágenes.
-  options: (string | { text: string; image_url?: string })[];
+  options: (string | { text: string; image_url?: string; /* image_alt removed */ })[];
   correctOption: number;
   explanation: string;
   image_url?: string;
   testType: TestType;
   simulacros?: string[];
   created_at?: string;
+  shuffledOptions?: (string | { text: string; image_url?: string; originalIndex: number })[];
+  shuffledCorrectOption?: number;
 }
 
 /**
@@ -94,7 +95,7 @@ export const useTestStore = create<TestState>((set, get) => ({
     if (state.selectedCategories.length === 0) return;
     const { data, error } = await supabase
       .from('questions')
-      .select('*')
+      .select('*') // Select all columns to ensure image_alt fields are present
       .eq('test_type', state.testType)
       .in('category', state.selectedCategories)
       .order('created_at', { ascending: false });
@@ -102,24 +103,49 @@ export const useTestStore = create<TestState>((set, get) => ({
       console.error('No se encontraron preguntas o hubo un error:', error);
       return;
     }
-    const transformed: Question[] = data.map((q: any) => ({
-      id: q.id.toString(),
-      testType: q.test_type,
-      category: q.category,
-      topic: q.topic,
-      text: q.text,
-      options: [
+    const transformed: Question[] = data.map((q: any) => {
+      const originalOptions = [
         q.option1_image_url ? { text: q.option1, image_url: q.option1_image_url } : q.option1,
         q.option2_image_url ? { text: q.option2, image_url: q.option2_image_url } : q.option2,
         q.option3_image_url ? { text: q.option3, image_url: q.option3_image_url } : q.option3,
         q.option4_image_url ? { text: q.option4, image_url: q.option4_image_url } : q.option4,
-      ],
-      correctOption: q.correct_option,
-      explanation: q.explanation,
-      image_url: q.image_url,
-      simulacros: q.simulacros,
-      created_at: q.created_at
-    }));
+      ];
+
+      // Create a more robust shuffling for options
+      const optionsWithOriginalIndex = originalOptions.map((option, index) => ({
+        option,
+        originalIndex: index
+      }));
+      const shuffledOptionsWithOriginalIndex = [...optionsWithOriginalIndex].sort(() => Math.random() - 0.5);
+
+      const finalShuffledOptions = shuffledOptionsWithOriginalIndex.map(item => {
+        if (typeof item.option === 'object' && item.option !== null) {
+          return { ...item.option, originalIndex: item.originalIndex };
+        }
+        // If it's a string, we convert it to the object structure for consistency in shuffledOptions
+        return { text: item.option as string, originalIndex: item.originalIndex };
+      });
+      
+      const newCorrectOptionIndex = shuffledOptionsWithOriginalIndex.findIndex(
+        item => item.originalIndex === q.correct_option
+      );
+
+      return {
+        id: q.id.toString(),
+        testType: q.test_type,
+        category: q.category,
+        topic: q.topic,
+        text: q.text,
+        options: originalOptions,
+        correctOption: q.correct_option,
+        explanation: q.explanation,
+        image_url: q.image_url,
+        simulacros: q.simulacros,
+        created_at: q.created_at,
+        shuffledOptions: finalShuffledOptions,
+        shuffledCorrectOption: newCorrectOptionIndex,
+      };
+    });
     const shuffledQuestions = transformed.sort(() => Math.random() - 0.5);
     const numQuestions = Math.min(state.numberOfQuestions, shuffledQuestions.length);
     const selected = shuffledQuestions.slice(0, numQuestions);
@@ -138,7 +164,6 @@ export const useTestStore = create<TestState>((set, get) => ({
     })),
 
   finishTest: () => {
-    const { testType } = get();
     set({
       isTestStarted: false,
       questions: [],
@@ -187,47 +212,78 @@ export const useQuestionsStore = create<QuestionsState>((set) => ({
   fetchQuestions: async () => {
     const { data, error } = await supabase
       .from('questions')
-      .select('*')
+      .select('*') // Select all columns
       .order('created_at', { ascending: false });
     if (error) {
       console.error('Error al obtener preguntas:', error);
     } else if (data) {
-      const transformed: Question[] = data.map((q: any) => ({
-        id: q.id.toString(),
-        testType: q.test_type,
-        category: q.category,
-        topic: q.topic,
-        text: q.text,
-        options: [
+      const transformed: Question[] = data.map((q: any) => {
+        const originalOptions = [
           q.option1_image_url ? { text: q.option1, image_url: q.option1_image_url } : q.option1,
           q.option2_image_url ? { text: q.option2, image_url: q.option2_image_url } : q.option2,
           q.option3_image_url ? { text: q.option3, image_url: q.option3_image_url } : q.option3,
           q.option4_image_url ? { text: q.option4, image_url: q.option4_image_url } : q.option4,
-        ],
-        correctOption: q.correct_option,
-        explanation: q.explanation,
-        image_url: q.image_url,
-        simulacros: q.simulacros,
-        created_at: q.created_at
-      }));
+        ];
+
+        const optionsWithOriginalIndex = originalOptions.map((option, index) => ({
+          option,
+          originalIndex: index
+        }));
+        const shuffledOptionsWithOriginalIndex = [...optionsWithOriginalIndex].sort(() => Math.random() - 0.5);
+
+        const finalShuffledOptions = shuffledOptionsWithOriginalIndex.map(item => {
+          if (typeof item.option === 'object' && item.option !== null) {
+            return { ...item.option, originalIndex: item.originalIndex };
+          }
+          return { text: item.option as string, originalIndex: item.originalIndex };
+        });
+        
+        const newCorrectOptionIndex = shuffledOptionsWithOriginalIndex.findIndex(
+          item => item.originalIndex === q.correct_option
+        );
+
+        return {
+          id: q.id.toString(),
+          testType: q.test_type,
+          category: q.category,
+          topic: q.topic,
+          text: q.text,
+          options: originalOptions,
+          correctOption: q.correct_option,
+          explanation: q.explanation,
+          image_url: q.image_url,
+          simulacros: q.simulacros,
+          created_at: q.created_at,
+          shuffledOptions: finalShuffledOptions,
+          shuffledCorrectOption: newCorrectOptionIndex,
+        };
+      });
       set({ questions: transformed });
     }
   },
   addQuestion: async (question) => {
     const generatedId = `question-${Date.now()}`;
+    // Helper to safely access option properties
+    const getOptionProp = (option: string | { text: string; image_url?: string; /* image_alt removed */ }, prop: 'text' | 'image_url' /* | 'image_alt' removed */) => {
+      if (typeof option === 'object') {
+        return option[prop] || (prop === 'text' ? '' : null);
+      }
+      return prop === 'text' ? option : null;
+    };
+
     const newQuestion = {
       id: generatedId,
       category: question.category,
       topic: question.topic,
       text: question.text,
-      option1: question.options[0].text,
-      option1_image_url: question.options[0].image_url || null,
-      option2: question.options[1].text,
-      option2_image_url: question.options[1].image_url || null,
-      option3: question.options[2].text,
-      option3_image_url: question.options[2].image_url || null,
-      option4: question.options[3].text,
-      option4_image_url: question.options[3].image_url || null,
+      option1: getOptionProp(question.options[0], 'text'),
+      option1_image_url: getOptionProp(question.options[0], 'image_url'),
+      option2: getOptionProp(question.options[1], 'text'),
+      option2_image_url: getOptionProp(question.options[1], 'image_url'),
+      option3: getOptionProp(question.options[2], 'text'),
+      option3_image_url: getOptionProp(question.options[2], 'image_url'),
+      option4: getOptionProp(question.options[3], 'text'),
+      option4_image_url: getOptionProp(question.options[3], 'image_url'),
       correct_option: question.correctOption,
       explanation: question.explanation,
       test_type: question.testType,
@@ -237,22 +293,52 @@ export const useQuestionsStore = create<QuestionsState>((set) => ({
     const { data, error } = await supabase
       .from('questions')
       .insert(newQuestion)
+      .select() // Ensure select is called to get the inserted row back
       .single();
+
     if (error) {
       console.error('Error al agregar la pregunta:', error);
     } else if (data) {
+      const dbData = data as any; // Cast to any to bypass strict type checking for the returned data
+      
+      const originalOptions = [
+        dbData.option1_image_url ? { text: dbData.option1, image_url: dbData.option1_image_url } : dbData.option1,
+        dbData.option2_image_url ? { text: dbData.option2, image_url: dbData.option2_image_url } : dbData.option2,
+        dbData.option3_image_url ? { text: dbData.option3, image_url: dbData.option3_image_url } : dbData.option3,
+        dbData.option4_image_url ? { text: dbData.option4, image_url: dbData.option4_image_url } : dbData.option4,
+      ];
+
+      const optionsWithOriginalIndex = originalOptions.map((option, index) => ({
+        option,
+        originalIndex: index
+      }));
+      const shuffledOptionsWithOriginalIndex = [...optionsWithOriginalIndex].sort(() => Math.random() - 0.5);
+      
+      const finalShuffledOptions = shuffledOptionsWithOriginalIndex.map(item => {
+        if (typeof item.option === 'object' && item.option !== null) {
+          return { ...item.option, originalIndex: item.originalIndex };
+        }
+        return { text: item.option as string, originalIndex: item.originalIndex };
+      });
+
+      const newCorrectOptionIndex = shuffledOptionsWithOriginalIndex.findIndex(
+        item => item.originalIndex === dbData.correct_option
+      );
+      
       const newQ: Question = {
-        id: data.id.toString(),
-        testType: data.test_type,
-        category: data.category,
-        topic: data.topic,
-        text: data.text,
-        options: [data.option1, data.option2, data.option3, data.option4],
-        correctOption: data.correct_option,
-        explanation: data.explanation,
-        image_url: data.image_url,
-        simulacros: data.simulacros,
-        created_at: data.created_at
+        id: dbData.id.toString(),
+        testType: dbData.test_type,
+        category: dbData.category,
+        topic: dbData.topic,
+        text: dbData.text,
+        options: originalOptions,
+        correctOption: dbData.correct_option,
+        explanation: dbData.explanation,
+        image_url: dbData.image_url,
+        simulacros: dbData.simulacros,
+        created_at: dbData.created_at,
+        shuffledOptions: finalShuffledOptions,
+        shuffledCorrectOption: newCorrectOptionIndex,
       };
       set((state) => ({
         questions: [newQ, ...state.questions]
@@ -302,20 +388,52 @@ export const useQuestionsStore = create<QuestionsState>((set) => ({
     if (question.correctOption !== undefined) updateData.correct_option = question.correctOption;
     if (question.explanation) updateData.explanation = question.explanation;
     if (question.testType) updateData.test_type = question.testType;
-    // Si se ha especificado la propiedad image_url (incluso undefined), se actualiza a null en BD
     if ('image_url' in question) updateData.image_url = question.image_url ?? null;
     if (question.simulacros !== undefined) updateData.simulacros = question.simulacros;
 
     const { data, error } = await supabase
       .from('questions')
       .update(updateData)
-      .eq('id', id);
+      .eq('id', id)
+      .select(); // Ensure select is called to get the updated row back for consistency
+
     if (error) {
       console.error('Error al actualizar la pregunta:', error);
     } else if (data) {
+      // Assuming data[0] contains the updated question, or adjust if .single() was used
       set((state) => ({
         questions: state.questions.map(q =>
-          q.id === id ? { ...q, ...question } : q
+          q.id === id ? { 
+            ...q, 
+            ...question, // Apply local optimistic update
+            // Optionally, overwrite with specific fields from updatedQuestionFromDb if they differ
+            // For example, if a server-side trigger modifies created_at or other fields:
+            // created_at: updatedQuestionFromDb.created_at
+            // Re-shuffle options if they were part of the update
+            ...(question.options && (() => {
+              const originalOptions = question.options!; // Already checked
+              const optionsWithOriginalIndex = originalOptions.map((option, index) => ({
+                option,
+                originalIndex: index
+              }));
+              const shuffledOptionsWithOriginalIndex = [...optionsWithOriginalIndex].sort(() => Math.random() - 0.5);
+              const finalShuffledOptions = shuffledOptionsWithOriginalIndex.map(item => {
+                if (typeof item.option === 'object' && item.option !== null) {
+                  return { ...item.option, originalIndex: item.originalIndex };
+                }
+                return { text: item.option as string, originalIndex: item.originalIndex };
+              });
+              const newCorrectOptionIndex = shuffledOptionsWithOriginalIndex.findIndex(
+                item => item.originalIndex === (question.correctOption !== undefined ? question.correctOption : q.correctOption)
+              );
+              return { 
+                shuffledOptions: finalShuffledOptions, 
+                shuffledCorrectOption: newCorrectOptionIndex,
+                options: originalOptions, // Ensure original options are also updated
+                correctOption: question.correctOption !== undefined ? question.correctOption : q.correctOption // Ensure original correctOption is also updated
+              };
+            })())
+           } : q
         )
       }));
     }

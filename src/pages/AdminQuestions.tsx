@@ -1,12 +1,34 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, X, Loader2 } from 'lucide-react';
+import { Edit2, Trash2, X, Loader2 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import ExcelJS from 'exceljs';
-import { useQuestionsStore } from '../lib/store';
+import { useQuestionsStore, TestType as StoreTestType, Question as StoreQuestion } from '../lib/store';
 import { supabase } from '../lib/supabase';
-import QuestionForm, { Question } from '../components/QuestionForm';
+import QuestionForm, { Question as FormQuestion } from '../components/QuestionForm';
 import ImageManager from '../components/ImageManager';
 import ConfirmModal from '../components/ConfirmModal';
+
+// Define an interface for the expected row structure from Excel
+interface ExcelRowData {
+  test_type?: string;
+  category?: string;
+  topic?: string;
+  text?: string;
+  image_url?: string;
+  option1?: string;
+  option1_image_url?: string;
+  option2?: string;
+  option2_image_url?: string;
+  option3?: string;
+  option3_image_url?: string;
+  option4?: string;
+  option4_image_url?: string;
+  correct_option?: number | string;
+  explanation?: string;
+  simulacros?: string;
+  // Add any other columns you expect from the Excel sheet
+  [key: string]: any; // Allow other properties if necessary, though explicit is better
+}
 
 export default function AdminQuestions() {
   const { questions, fetchQuestions, addQuestion, updateQuestion, deleteQuestion, addCategory } = useQuestionsStore();
@@ -17,7 +39,7 @@ export default function AdminQuestions() {
   // Estados y variables de preguntas
   const [testType, setTestType] = useState('');
   const [isEditing, setIsEditing] = useState(false);
-  const [currentQuestion, setCurrentQuestion] = useState<Partial<Question>>({
+  const [currentQuestion, setCurrentQuestion] = useState<Partial<FormQuestion>>({
     testType: '',
     category: '',
     topic: '',
@@ -91,28 +113,29 @@ export default function AdminQuestions() {
       const workbook = XLSX.read(data, { type: 'binary' });
       const sheetName = workbook.SheetNames[0];
       const sheet = workbook.Sheets[sheetName];
-      const jsonData = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+      // Use the ExcelRowData interface with sheet_to_json
+      const jsonData = XLSX.utils.sheet_to_json<ExcelRowData>(sheet, { defval: '' });
 
-      for (const row of jsonData) {
-        const rawTestType = String(row['test_type'] || "").trim().toLowerCase();
-        let testTypeOption = "";
+      for (const row of jsonData) { // row will now be of type ExcelRowData
+        const rawTestType = String(row.test_type || "").trim().toLowerCase();
+        let testTypeOption: StoreTestType | "" = "";
         if (rawTestType === "teoria" || rawTestType === "teoría") {
           testTypeOption = "Teoría";
         } else if (rawTestType === "psicotecnico" || rawTestType === "psicotécnico") {
           testTypeOption = "Psicotécnico";
         } else {
-          console.warn(`Test type inválido: ${row['test_type']}. Se omitirá la fila.`);
+          console.warn(`Test type inválido: ${row.test_type}. Se omitirá la fila.`);
           continue;
         }
 
         const newQuestionSignature = JSON.stringify({
-          text: String(row['text'] || "").trim(),
-          correctOption: Number(row['correct_option']) - 1,
+          text: String(row.text || "").trim(),
+          correctOption: Number(row.correct_option) - 1,
           options: [
-            String(row['option1'] || "").trim(),
-            String(row['option2'] || "").trim(),
-            String(row['option3'] || "").trim(),
-            String(row['option4'] || "").trim()
+            String(row.option1 || "").trim(),
+            String(row.option2 || "").trim(),
+            String(row.option3 || "").trim(),
+            String(row.option4 || "").trim()
           ]
         });
 
@@ -127,39 +150,63 @@ export default function AdminQuestions() {
           return existingSignature === newQuestionSignature;
         });
 
-        const simulacrosString = String(row['simulacros'] || "");
+        const simulacrosString = String(row.simulacros || "");
         const simulacros = simulacrosString
           ? simulacrosString.split(',').map(s => s.trim()).filter(s => s !== "")
           : [];
 
-        const newQuestionFromExcel: Question = {
-          id: duplicateIndex !== -1 ? localQuestions[duplicateIndex].id : `question-${Date.now()}-${Math.random()}`,
+        // const newQuestionFromExcel: StoreQuestion = { // This variable is unused
+        //   id: duplicateIndex !== -1 ? localQuestions[duplicateIndex].id : `question-${Date.now()}-${Math.random()}`,
+        //   testType: testTypeOption,
+        //   category: String(row.category || "").trim(),
+        //   topic: String(row.topic || "").trim(),
+        //   text: String(row.text || ""),
+        //   options: [
+        //     { text: String(row.option1 || ""), image_url: row.option1_image_url || undefined }, 
+        //     { text: String(row.option2 || ""), image_url: row.option2_image_url || undefined }, 
+        //     { text: String(row.option3 || ""), image_url: row.option3_image_url || undefined }, 
+        //     { text: String(row.option4 || ""), image_url: row.option4_image_url || undefined }, 
+        //   ],
+        //   correctOption: Number(row.correct_option) - 1 || 0,
+        //   explanation: String(row.explanation || ""),
+        //   image_url: row.image_url || undefined, 
+        //   simulacros: simulacros,
+        //   // Fields from StoreQuestion not in Excel; typically handled by store/DB
+        //   shuffledOptions: undefined, 
+        //   shuffledCorrectOption: undefined,
+        //   created_at: undefined, 
+        // };
+
+        // Prepare data for store functions
+        const questionDataForStore: Omit<StoreQuestion, 'id' | 'created_at' | 'shuffledOptions' | 'shuffledCorrectOption'> & { id?: string } = {
           testType: testTypeOption,
-          category: String(row['category'] || "").trim(),
-          topic: String(row['topic'] || "").trim(),
-          text: String(row['text'] || ""),
+          category: String(row.category || "").trim(),
+          topic: String(row.topic || "").trim(),
+          text: String(row.text || ""),
           options: [
-            { text: String(row['option1'] || ""), image_url: row['option1_image_url'] || null },
-            { text: String(row['option2'] || ""), image_url: row['option2_image_url'] || null },
-            { text: String(row['option3'] || ""), image_url: row['option3_image_url'] || null },
-            { text: String(row['option4'] || ""), image_url: row['option4_image_url'] || null },
+            { text: String(row.option1 || ""), image_url: row.option1_image_url || undefined },
+            { text: String(row.option2 || ""), image_url: row.option2_image_url || undefined },
+            { text: String(row.option3 || ""), image_url: row.option3_image_url || undefined },
+            { text: String(row.option4 || ""), image_url: row.option4_image_url || undefined },
           ],
-          correctOption: Number(row['correct_option']) - 1 || 0,
-          explanation: String(row['explanation'] || ""),
-          image_url: row['image_url'] || null,
-          simulacros: simulacros
+          correctOption: Number(row.correct_option) - 1 || 0,
+          explanation: String(row.explanation || ""),
+          image_url: row.image_url || undefined,
+          simulacros: simulacros,
         };
 
         if (duplicateIndex !== -1) {
-          await updateQuestion(localQuestions[duplicateIndex].id, newQuestionFromExcel);
-          localQuestions[duplicateIndex] = { ...localQuestions[duplicateIndex], ...newQuestionFromExcel };
+          const existingId = localQuestions[duplicateIndex].id;
+          await updateQuestion(existingId, questionDataForStore);
+          const updatedQuestionFromStore = { ...localQuestions[duplicateIndex], ...questionDataForStore, id: existingId };
+          localQuestions[duplicateIndex] = updatedQuestionFromStore as StoreQuestion;
         } else {
-          await addQuestion(newQuestionFromExcel);
-          localQuestions.push(newQuestionFromExcel);
+          const questionToAdd: Omit<StoreQuestion, 'id' | 'created_at' | 'shuffledOptions' | 'shuffledCorrectOption'> = questionDataForStore;
+          await addQuestion(questionToAdd);
         }
       }
       setImportMessage('Preguntas importadas correctamente.');
-      document.getElementById('importExcelDialog')?.close();
+      (document.getElementById('importExcelDialog') as HTMLDialogElement)?.close();
       fetchQuestions();
       setSelectedExcelFile(null);
       setIsImporting(false);
@@ -297,9 +344,9 @@ export default function AdminQuestions() {
       alert('Completa todos los campos requeridos');
       return;
     }
-    const newQuestionObj: Question = {
+    const newQuestionObj: StoreQuestion = {
       id: currentQuestion.id as string,
-      testType: currentQuestion.testType as string,
+      testType: currentQuestion.testType as StoreTestType,
       category: currentQuestion.category as string,
       topic: currentQuestion.topic as string,
       text: currentQuestion.text as string,
@@ -346,11 +393,15 @@ export default function AdminQuestions() {
     setConfirmDeleteAllQuestions(false);
   };
 
-  const handleEdit = (question: Question) => {
-    const simulacrosArray = typeof question.simulacros === 'string'
-      ? question.simulacros.split(',').map(s => s.trim()).filter(s => s !== '')
-      : question.simulacros || [];
-    setCurrentQuestion({ ...question, simulacros: simulacrosArray });
+  const handleEdit = (question: StoreQuestion) => {
+    const simulacrosArray: string[] = Array.isArray(question.simulacros) ? question.simulacros : [];
+    
+    setCurrentQuestion({ 
+      ...question, 
+      testType: question.testType,
+      simulacros: simulacrosArray 
+    } as Partial<FormQuestion>);
+
     setTestType(question.testType);
     setIsEditing(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -358,7 +409,7 @@ export default function AdminQuestions() {
 
   const resetForm = () => {
     setCurrentQuestion({
-      testType: '',
+      testType: '' as StoreTestType | '',
       category: '',
       topic: '',
       text: '',
@@ -376,11 +427,15 @@ export default function AdminQuestions() {
     if (!newCategory.trim()) return;
     addCategory(newCategory.trim());
     setNewCategory('');
-    document.getElementById('newCategoryDialog')?.close();
+    (document.getElementById('newCategoryDialog') as HTMLDialogElement)?.close();
   };
 
   const filteredQuestions = filterCategory ? questions.filter(q => q.category === filterCategory) : questions;
-  const sortedQuestions = filteredQuestions.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  const sortedQuestions = [...filteredQuestions].sort((a, b) => {
+    const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
+    const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
+    return dateB - dateA;
+  });
   const indexOfLastQ = currentPage * questionsPerPage;
   const indexOfFirstQ = indexOfLastQ - questionsPerPage;
   const currentQuestions = sortedQuestions.slice(indexOfFirstQ, indexOfLastQ);
@@ -448,7 +503,7 @@ export default function AdminQuestions() {
             <div className="flex items-center space-x-2">
               <button
                 className="btn-secondary"
-                onClick={() => document.getElementById('importExcelDialog')?.showModal()}
+                onClick={() => (document.getElementById('importExcelDialog') as HTMLDialogElement)?.showModal()}
               >
                 Importar Excel
               </button>
@@ -495,11 +550,13 @@ export default function AdminQuestions() {
                         {question.text}
                       </p>
                       {question.image_url && (
-                        <img
-                          src={question.image_url}
-                          alt="Imagen de la pregunta"
-                          className="mb-2 max-h-32 w-full object-contain rounded-lg"
-                        />
+                        <div className="flex justify-center mb-2">
+                          <img
+                            src={question.image_url}
+                            alt="Imagen de la pregunta"
+                            className="max-h-32 w-auto object-contain rounded-2xl"
+                          />
+                        </div>
                       )}
                       <div className="mt-2">
                         <p className="font-semibold text-text-primary dark:text-white">
@@ -602,7 +659,7 @@ export default function AdminQuestions() {
               <button
                 onClick={() => {
                   setNewCategory('');
-                  document.getElementById('newCategoryDialog')?.close();
+                  (document.getElementById('newCategoryDialog') as HTMLDialogElement)?.close();
                 }}
                 className="btn-secondary"
               >
@@ -618,7 +675,7 @@ export default function AdminQuestions() {
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-semibold text-text-primary dark:text-white">Importar Excel</h3>
               <button
-                onClick={() => document.getElementById('importExcelDialog')?.close()}
+                onClick={() => (document.getElementById('importExcelDialog') as HTMLDialogElement)?.close()}
                 className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
               >
                 <X className="w-5 h-5 text-text-secondary dark:text-gray-400" />

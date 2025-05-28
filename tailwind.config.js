@@ -6,10 +6,10 @@ export default {
     extend: {
       colors: {
         primary: {
-          DEFAULT: '#6366F1',
-          hover: '#4F46E5',
+          DEFAULT: '#004cac',
+          hover: '#003d82',
         },
-        secondary: '#9333EA',
+        secondary: '#004cac',
         'text-primary': '#1F2937',
         'text-secondary': '#6B7280',
         'desafio-blue': '#1b58ab',

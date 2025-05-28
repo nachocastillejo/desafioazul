@@ -45,9 +45,9 @@ export default function Home() {
 
       {/* Beneficios Clave */}
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-        <div className="card p-6 bg-gradient-to-br from-blue-50 to-transparent dark:from-blue-900/10 shadow-2xl shadow-blue-500/10 dark:shadow-blue-500/20 transition-all duration-300">
-          <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center mb-4 shadow-inner">
-            <Target className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+        <div className="card p-6 bg-gradient-to-br from-primary/5 dark:from-primary/10 to-transparent shadow-2xl shadow-primary/10 dark:shadow-primary/20 transition-all duration-300">
+          <div className="w-12 h-12 bg-primary/10 dark:bg-primary/20 rounded-xl flex items-center justify-center mb-4 shadow-inner">
+            <Target className="w-6 h-6 text-primary dark:text-primary" />
           </div>
           <h3 className="text-lg font-semibold text-text-primary dark:text-white mb-2">
             Test a medida, mejora sin límites
@@ -57,9 +57,9 @@ export default function Home() {
           </p>
         </div>
 
-        <div className="card p-6 bg-gradient-to-br from-purple-50 to-transparent dark:from-purple-900/10 shadow-2xl shadow-purple-500/10 dark:shadow-purple-500/20 transition-all duration-300">
-          <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 rounded-xl flex items-center justify-center mb-4 shadow-inner">
-            <Brain className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+        <div className="card p-6 bg-gradient-to-br from-primary/5 dark:from-primary/10 to-transparent shadow-2xl shadow-primary/10 dark:shadow-primary/20 transition-all duration-300">
+          <div className="w-12 h-12 bg-primary/10 dark:bg-primary/20 rounded-xl flex items-center justify-center mb-4 shadow-inner">
+            <Brain className="w-6 h-6 text-primary dark:text-primary" />
           </div>
           <h3 className="text-lg font-semibold text-text-primary dark:text-white mb-2">
             Preguntas Actualizadas

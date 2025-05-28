@@ -1,56 +1,95 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import ReactDOM from 'react-dom';
 import { X } from 'lucide-react';
 import { useTestStore } from '../lib/store';
 import { supabase } from '../lib/supabase';
 
-export default function CategorySelectionModal({ isOpen, onClose, onStart }) {
+// Define an interface for category objects if not already defined elsewhere
+interface Category {
+  id: string | number;
+  category: string;
+  test_type: string;
+  topic?: string; // Optional, as it's used for 'Teoría'
+  order_number?: number;
+  // Add any other relevant fields for a category object
+}
+
+interface CategorySelectionModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onStart: (selectedCategories: string[]) => void;
+  availableCategoriesOverride?: Category[]; // Added prop
+}
+
+export default function CategorySelectionModal({
+  isOpen,
+  onClose,
+  onStart,
+  availableCategoriesOverride // Added
+}: CategorySelectionModalProps) {
   const { testType, selectedCategories, toggleCategory, toggleTopicCategories, setSelectedCategories } = useTestStore();
-  const [dbCategories, setDbCategories] = useState([]);
+  const [dbCategories, setDbCategories] = useState<Category[]>([]);
 
-  // Consulta las categorías desde Supabase ordenadas por order_number
   useEffect(() => {
-    const fetchCategories = async () => {
-      const { data, error } = await supabase
-        .from('categories')
-        .select('*')
-        .order('order_number', { ascending: true });
-      if (error) {
-        console.error('Error fetching categories:', error);
-      } else {
-        setDbCategories(data);
-      }
-    };
-    fetchCategories();
-  }, []);
+    if (availableCategoriesOverride) {
+      setDbCategories(availableCategoriesOverride);
+    } else {
+      const fetchCategories = async () => {
+        const { data, error } = await supabase
+          .from('categories')
+          .select('*')
+          .order('order_number', { ascending: true });
+        if (error) {
+          console.error('Error fetching categories:', error);
+        } else {
+          setDbCategories(data as Category[]);
+        }
+      };
+      fetchCategories();
+    }
+  }, [availableCategoriesOverride]); // Depend on availableCategoriesOverride
 
-  // availableCategories: array de objetos filtrados por testType
   const availableCategories = useMemo(() => {
+    if (availableCategoriesOverride) {
+      // If override is provided, filter it by testType if testType is also relevant here
+      // Otherwise, just use the override as is if it's already pre-filtered or doesn't need testType filtering.
+      // For the bookmarks use case, availableCategoriesOverride will be pre-filtered.
+      return availableCategoriesOverride;
+    }
     return dbCategories.filter(cat => cat.test_type === testType);
-  }, [testType, dbCategories]);
+  }, [testType, dbCategories, availableCategoriesOverride]);
 
   // Para test de Teoría: agrupar por topic
   const groupedCategories = useMemo(() => {
-    if (testType === 'Teoría') {
+    // Only group if not using override OR if override still needs grouping by topic
+    if (testType === 'Teoría' && !availableCategoriesOverride) { // Adjusted condition
       return availableCategories.reduce((groups, cat) => {
-        const topic = cat.topic;
+        const topic = cat.topic || 'General'; // Fallback topic if undefined
         if (!groups[topic]) groups[topic] = [];
         groups[topic].push(cat);
         return groups;
-      }, {});
+      }, {} as Record<string, Category[]>);
+    }
+    // If using override, and it's for bookmarks, we might not need grouping by topic
+    // or the structure might be simpler. For now, let's assume no grouping for override.
+    // This part might need adjustment based on how bookmarked categories should be displayed.
+    if (availableCategoriesOverride && testType === 'Teoría') {
+        // If you still want grouping for overridden theory questions, implement similar logic here.
+        // For now, let's treat them as a flat list like Psicotecnico for simplicity with override.
+         return null; // Or handle grouping if needed for overridden theory categories
     }
     return null;
-  }, [testType, availableCategories]);
+  }, [testType, availableCategories, availableCategoriesOverride]);
 
-  // Al abrir el modal, asigna todas las categorías disponibles (por default)
   useEffect(() => {
     if (isOpen && availableCategories.length > 0) {
+      // When modal opens, select all *available* categories (could be from override or fetched)
       setSelectedCategories(availableCategories.map(cat => cat.category));
     }
-  }, [isOpen, availableCategories, setSelectedCategories]);
+  }, [isOpen, availableCategories, setSelectedCategories]); // availableCategories now correctly reflects override or fetched
 
-  // Verifica si todas las categorías están seleccionadas (compara por nombre)
   const allSelected = useMemo(() => {
+    if (availableCategories.length === 0) return false; // Handle empty available categories
     return availableCategories.every(cat => selectedCategories.includes(cat.category));
   }, [availableCategories, selectedCategories]);
 
@@ -78,7 +117,7 @@ export default function CategorySelectionModal({ isOpen, onClose, onStart }) {
       onClick={onClose}
     >
       <div
-        className="bg-white dark:bg-gray-800 rounded-xl w-full max-w-md max-h-[90vh] flex flex-col"
+        className="bg-white dark:bg-gray-800 rounded-xl w-full max-w-md max-h-[90vh] flex flex-col overflow-hidden"
         onClick={e => e.stopPropagation()}
       >
         {/* Encabezado */}
@@ -117,7 +156,7 @@ export default function CategorySelectionModal({ isOpen, onClose, onStart }) {
           </div>
 
           {/* Listado de categorías según el tipo de test */}
-          {testType === 'Teoría' && groupedCategories ? (
+          {(testType === 'Teoría' && groupedCategories && !availableCategoriesOverride) ? (
             Object.entries(groupedCategories).map(([sectionName, cats]) => {
               if (!cats.length) return null;
               const selectedCount = cats.filter(cat => selectedCategories.includes(cat.category)).length;
@@ -146,14 +185,14 @@ export default function CategorySelectionModal({ isOpen, onClose, onStart }) {
                     </div>
                   </button>
                   <div className="mt-1 space-y-1">
-                    {cats.map((cat) => {
-                      const isAvailable = availableCategories.some(c => c.category === cat.category);
+                    {(cats as Category[]).map((cat) => { // Explicitly cast cats to Category[]
+                      // const isAvailable = availableCategories.some(c => c.category === cat.category); // isAvailable check might be redundant if cats are from availableCategories
                       const isSelected = selectedCategories.includes(cat.category);
                       return (
                         <button
                           key={cat.id}
-                          onClick={() => isAvailable && toggleCategory(cat.category)}
-                          disabled={!isAvailable}
+                          onClick={() => toggleCategory(cat.category)} // Removed isAvailable check here as cats are already filtered
+                          // disabled={!isAvailable} // This might be re-enabled if there's a sub-selection logic
                           className="w-full flex items-center justify-between py-1 px-3 transition-colors text-xs text-text-secondary dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           <div className="flex-1 mr-2">
@@ -165,7 +204,7 @@ export default function CategorySelectionModal({ isOpen, onClose, onStart }) {
                                     : 'bg-gray-50 dark:bg-gray-700'
                                 }`}
                               >
-                                {cat.order_number}
+                                {cat.order_number || '-'} {/* Fallback for order_number */}
                               </span>
                               <span className="text-left">{cat.category}</span>
                             </div>
@@ -181,16 +220,16 @@ export default function CategorySelectionModal({ isOpen, onClose, onStart }) {
               );
             })
           ) : (
-            // Para test Psicotécnico
+            // For Psicotécnico testType OR when availableCategoriesOverride is used (e.g., for bookmarks test)
             <div className="mb-2 rounded-md overflow-hidden">
               {availableCategories.map((cat) => {
-                const isAvailable = availableCategories.some(c => c.category === cat.category);
+                // const isAvailable = availableCategories.some(c => c.category === cat.category); // Redundant as we are mapping over availableCategories
                 const isSelected = selectedCategories.includes(cat.category);
                 return (
                   <button
                     key={cat.id}
-                    onClick={() => isAvailable && toggleCategory(cat.category)}
-                    disabled={!isAvailable}
+                    onClick={() => toggleCategory(cat.category)} // Simplified, as cat is from availableCategories
+                    // disabled={!isAvailable} // Redundant
                     className="w-full flex items-center justify-between py-1 px-3 transition-colors text-xs text-text-secondary dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <div className="flex-1 mr-2">
@@ -202,7 +241,7 @@ export default function CategorySelectionModal({ isOpen, onClose, onStart }) {
                               : 'bg-gray-50 dark:bg-gray-700'
                           }`}
                         >
-                          {cat.order_number}
+                          {cat.order_number || '-'} {/* Fallback for order_number */}
                         </span>
                         <span className="text-left">{cat.category}</span>
                       </div>

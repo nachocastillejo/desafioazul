@@ -1,13 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import {
-  Bookmark,
-  X,
-  ArrowLeft,
-  ArrowRight,
-  Timer,
-  Brain,
-  Trophy,
   ClipboardCheck,
   CircleDot,
   RefreshCw // <-- Para resetear score
@@ -15,10 +8,11 @@ import {
 import { useTestStore, TestType } from '../lib/store';
 import CategorySelectionModal from "../components/CategorySelectionModal";
 import { useAuth } from '../contexts/AuthContext';
-import { registerCompletedTest } from '../services/statsService';
+// import { registerCompletedTest } from '../services/statsService'; // Unused
 import TestSimulator from '../components/TestSimulator';
 import SingleQuestionMode from '../components/SingleQuestionMode';
 import SimulacroFormativoCard from '../components/SimulacroFormativoCard';
+import { supabase } from '../lib/supabase'; // Added Supabase import
 
 // Define interfaces for props to fix 'any' type errors and improve clarity
 interface TestCardProps {
@@ -197,8 +191,8 @@ const SingleQuestionCard: React.FC<SingleQuestionCardProps> = ({ title, icon: Ic
 
 export default function QuestionView() {
   const {
-    testType,
-    questions,
+    // testType, // Unused from store, singleQuestionType is used for mode
+    // questions, // Unused from store
     isTestStarted,
     setNumberOfQuestions,
     startTest,
@@ -209,9 +203,10 @@ export default function QuestionView() {
   } = useTestStore();
 
   const { user } = useAuth();
+  // const DB_PRACTICE_STATS_KEY = 'PSICOTECNICO_SUELTAS'; // No longer needed for table/row identification
 
   // Estados locales para número de preguntas en Teoría y Psicotécnico
-  const [teoriaNumQuestions, setTeoriaNumQuestions] = useState(15);
+  const [teoriaNumQuestions, /* setTeoriaNumQuestions */] = useState(15); // setTeoriaNumQuestions unused
   const [psicoNumQuestions, setPsicoNumQuestions] = useState(15);
 
   // Estados para gestionar la vista
@@ -220,19 +215,72 @@ export default function QuestionView() {
   const [singleQuestionType, setSingleQuestionType] = useState<TestType | null>(null);
 
   // Estados compartidos para ambos modos
-  const [startTime, setStartTime] = useState<Date | null>(null);
+  const [startTime, /* setStartTime */] = useState<Date | null>(null); // setStartTime unused
   const [showResults, setShowResults] = useState(false);
   const [resultsSaved, setResultsSaved] = useState(false);
   const [showExitConfirmation, setShowExitConfirmation] = useState(false);
 
-  // Estados para estadísticas de preguntas sueltas
-  const [singleQuestionStats, setSingleQuestionStats] = useState({
+  // Estados para estadísticas de preguntas sueltas (específicamente para Psicotécnico en la tarjeta)
+  const initialPracticeStats = {
     correct: 0,
     incorrect: 0,
     unanswered: 0,
     totalCorrected: 0,
     finalScore: '0.00'
-  });
+  };
+  const [singleQuestionStats, setSingleQuestionStats] = useState(initialPracticeStats);
+
+  // Load practice stats from DB
+  useEffect(() => {
+    if (user) {
+      const fetchPracticeStats = async () => {
+        const { data, error } = await supabase
+          .from('user_profiles') // Changed to user_profiles
+          .select('preguntas_sueltas_correct, preguntas_sueltas_incorrect, preguntas_sueltas_unanswered, preguntas_sueltas_total_corrected, preguntas_sueltas_final_score') // Select specific columns with new names
+          .eq('id', user.id) // Assuming user_profiles uses 'id' as PK linked to auth.users.id
+          .single();
+
+        if (data && !error) {
+          setSingleQuestionStats({
+            correct: data.preguntas_sueltas_correct || 0,
+            incorrect: data.preguntas_sueltas_incorrect || 0,
+            unanswered: data.preguntas_sueltas_unanswered || 0,
+            totalCorrected: data.preguntas_sueltas_total_corrected || 0,
+            finalScore: data.preguntas_sueltas_final_score || '0.00'
+          });
+        } else if (error && error.code !== 'PGRST116') { // PGRST116: 'No rows found' (user might not have a profile yet or no stats saved)
+          console.warn('User profile or practice stats not found, or error fetching:', error);
+          // Optionally, create a profile row here if it doesn't exist, or ensure it's created on sign-up.
+          // For now, we just use initial stats.
+          setSingleQuestionStats(initialPracticeStats);
+        }
+      };
+      fetchPracticeStats();
+    } else {
+      // If user logs out, reset stats to initial
+      setSingleQuestionStats(initialPracticeStats);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
+
+  const savePracticeStatsToDb = async (statsToSave: typeof initialPracticeStats) => {
+    if (!user) return;
+    const { error } = await supabase
+      .from('user_profiles') // Changed to user_profiles
+      .update({ // Using update, assuming profile row exists. Upsert could also be used if id is unique.
+        preguntas_sueltas_correct: statsToSave.correct,
+        preguntas_sueltas_incorrect: statsToSave.incorrect,
+        preguntas_sueltas_unanswered: statsToSave.unanswered,
+        preguntas_sueltas_total_corrected: statsToSave.totalCorrected,
+        preguntas_sueltas_final_score: statsToSave.finalScore,
+        preguntas_sueltas_last_updated_at: new Date().toISOString(),
+      })
+      .eq('id', user.id); // Match the user's profile row
+
+    if (error) {
+      console.error('Error saving practice stats to user_profiles:', error);
+    }
+  };
 
   // Función para iniciar el test según el tipo
   const handleTestStart = (type: TestType) => {
@@ -257,7 +305,7 @@ export default function QuestionView() {
   // Cuando el usuario confirma la selección de categorías
   const handleStartTestModal = (selectedCats: string[]) => {
     setSelectedCategories(selectedCats);
-    startTest();
+    startTest(); // This sets isTestStarted to true
     setShowCategoryModal(false);
   };
 
@@ -269,13 +317,21 @@ export default function QuestionView() {
   };
 
   const resetSingleQuestionStats = () => {
-    setSingleQuestionStats({
-      correct: 0,
-      incorrect: 0,
-      unanswered: 0,
-      totalCorrected: 0,
-      finalScore: '0.00'
-    });
+    setSingleQuestionStats(initialPracticeStats);
+    if (user) {
+      savePracticeStatsToDb(initialPracticeStats);
+    }
+  };
+
+  // Wrapped setter for SingleQuestionMode stats
+  const handleSetSingleQuestionModeStats = (newStats: typeof initialPracticeStats) => {
+    setSingleQuestionStats(newStats); // Update local state for display
+
+    // Persist only if the current single question mode is for Psicotécnico
+    // singleQuestionType is set by handleSingleQuestionStart
+    if (user && singleQuestionType === 'Psicotécnico') {
+      savePracticeStatsToDb(newStats);
+    }
   };
 
   const handleExit = () => setShowExitConfirmation(true);
@@ -287,7 +343,7 @@ export default function QuestionView() {
         testType={singleQuestionType}
         selectedCategories={selectedCategories}
         stats={singleQuestionStats}
-        setStats={setSingleQuestionStats}
+        setStats={handleSetSingleQuestionModeStats} // Use the wrapped setter
         confirmExit={false}
         onExit={() => onExitConfirmWrapper()}  
         showExitConfirmation={showExitConfirmation}

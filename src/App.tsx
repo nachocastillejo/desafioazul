@@ -20,6 +20,7 @@ const PrivacyPolicyPage = lazy(() => import('./pages/PrivacyPolicyPage'));
 const CookiesPolicyPage = lazy(() => import('./pages/CookiesPolicyPage'));
 const PurchaseTermsPage = lazy(() => import('./pages/PurchaseTermsPage'));
 const FaqPage = lazy(() => import('./pages/FaqPage'));
+// const SettingsPage = lazy(() => import('./pages/SettingsPage')); // Removed due to missing file
 
 function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -139,6 +140,10 @@ function App() {
             path="/faq"
             element={<Suspense fallback={<div>Loading...</div>}><AppLayout isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar}><FaqPage /></AppLayout></Suspense>}
           />
+          <Route
+            path="/ajustes"
+            element={<Suspense fallback={<div>Loading...</div>}><ProtectedRoute><AppLayout isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar}><div>Settings Page Placeholder</div></AppLayout></ProtectedRoute></Suspense>}
+          />
           
           {/* Redirigir rutas no encontradas */}
           <Route path="*" element={<Navigate to="/" replace />} />
@@ -172,7 +177,7 @@ function AppLayout({ children, isSidebarOpen, toggleSidebar }: AppLayoutProps) {
           isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
         } lg:translate-x-0 transition-transform duration-200 ease-in-out w-64`}
       >
-        <Sidebar onCloseMobile={toggleSidebar} isSidebarOpen={isSidebarOpen} />
+        <Sidebar onCloseMobile={toggleSidebar} />
       </div>
 
       {/* Contenido principal */}

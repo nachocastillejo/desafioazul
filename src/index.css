@@ -5,9 +5,9 @@
 @tailwind utilities;
 
 :root {
-  --primary: #6366F1;
-  --primary-hover: #4F46E5;
-  --secondary: #9333EA;
+  --primary: #004cac;
+  --primary-hover: #003d82;
+  --secondary: #004cac;
   --text-primary: #1F2937;
   --text-secondary: #6B7280;
   --bg-primary: #F9FAFB;
@@ -103,19 +103,23 @@
 }
 
 .btn-primary {
-  @apply bg-[#6366F1] hover:bg-[#4F46E5] text-white font-medium px-4 py-2 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg hover:shadow-primary/20 active:scale-[0.98];
+  @apply bg-primary hover:bg-primary-hover text-white font-medium px-4 py-2 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg hover:shadow-primary/20 active:scale-[0.98];
 }
 
 .btn-secondary {
-  @apply bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-medium px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 transition-all hover:shadow-md active:scale-[0.98];
+  @apply bg-gray-100 hover:bg-gray-200 text-text-secondary dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-300 font-medium px-4 py-2 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed;
 }
 
 .card {
-  @apply bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl shadow-xl border border-white/20 dark:border-gray-700/20 transition-all hover:shadow-2xl hover:shadow-primary/5 dark:hover:shadow-primary/10;
+  @apply bg-white dark:bg-gray-800 shadow-lg rounded-xl;
 }
 
 .input-field {
-  @apply w-full pl-12 pr-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366F1] focus:border-transparent transition-all bg-white dark:bg-gray-800 text-gray-900 dark:text-white;
+  @apply w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all bg-white dark:bg-gray-800 text-gray-900 dark:text-white;
+}
+
+.input-field-icon {
+  @apply w-full pl-12 pr-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all bg-white dark:bg-gray-800 text-gray-900 dark:text-white;
 }
 
 /* Tipografía */
@@ -221,4 +225,29 @@
 /* Focus */
 .focus-ring {
   @apply focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 dark:focus:ring-offset-gray-800;
+}
+
+.link {
+  @apply text-primary hover:text-primary-hover transition-colors;
+}
+
+.text-gradient {
+  @apply bg-gradient-to-r from-primary to-blue-400 text-transparent bg-clip-text;
+}
+
+.active-nav-link {
+  @apply bg-primary/10 dark:bg-primary/20 text-primary;
+}
+
+.inactive-nav-link {
+  @apply text-text-secondary dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700;
+}
+
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: theme('colors.gray.300') theme('colors.gray.100');
+}
+
+.dark .scrollbar-thin {
+  scrollbar-color: theme('colors.gray.700') theme('colors.gray.800');
 }

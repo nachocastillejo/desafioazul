@@ -1,8 +1,6 @@
-import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Home,
-  List,
   ClipboardCheck,
   Calculator,
   Settings,
@@ -11,8 +9,6 @@ import {
   Menu,
   User,
   TrendingUp,
-  ChevronDown,
-  ChevronUp,
   LogOut,
   Bookmark,
   Info
@@ -23,26 +19,24 @@ import { useAuth } from '../contexts/AuthContext';
 
 interface SidebarProps {
   onCloseMobile?: () => void;
-  isSidebarOpen?: boolean;
 }
 
-export default function Sidebar({ onCloseMobile, isSidebarOpen }: SidebarProps) {
+export default function Sidebar({ onCloseMobile }: SidebarProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const { isTestStarted, finishTest } = useTestStore();
   const { user, profile, signOut } = useAuth();
-  const [isTestDropdownOpen, setIsTestDropdownOpen] = useState(false);
 
   const handleNavigation = (path: string) => {
     if (isTestStarted) {
       finishTest();
     }
-    navigate(path);
+    if (path === '/bookmarks') {
+      navigate(path, { state: { navigatedToBookmarksSignal: Date.now() } });
+    } else {
+      navigate(path);
+    }
     onCloseMobile?.();
-  };
-
-  const toggleTestDropdown = () => {
-    setIsTestDropdownOpen(!isTestDropdownOpen);
   };
 
   const handleLogout = async () => {
@@ -59,9 +53,18 @@ export default function Sidebar({ onCloseMobile, isSidebarOpen }: SidebarProps) 
       <div className="p-6 border-b border-gray-100 dark:border-gray-700 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm">
         <div className="flex items-center">
           <div className="flex items-center space-x-4 flex-grow">
-            <div className="w-12 h-12 bg-primary/10 dark:bg-primary/20 rounded-xl flex items-center justify-center">
-              <User className="w-6 h-6 text-primary" />
-            </div>
+            {/* Profile Image or Icon */}
+            {profile?.profile_image_url ? (
+              <img 
+                src={profile.profile_image_url} 
+                alt="Avatar" 
+                className="w-12 h-12 rounded-xl object-cover bg-gray-200 dark:bg-gray-700"
+              />
+            ) : (
+              <div className="w-12 h-12 bg-primary/10 dark:bg-primary/20 rounded-xl flex items-center justify-center">
+                <User className="w-6 h-6 text-primary" />
+              </div>
+            )}
             <div className="flex flex-col">
               <span className="font-semibold text-text-primary dark:text-white text-lg">
                 {profile?.full_name || 'Usuario'}

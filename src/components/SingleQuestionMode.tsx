@@ -1,15 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import {
-  BookmarkPlus,
   BookmarkCheck,
-  RefreshCw,
   ChevronRight,
   X,
-  CircleDot
+  CircleDot,
+  Bookmark
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { TestType } from '../lib/store';
+import { TestType, Question } from '../lib/store';
+import { useAuth } from '../contexts/AuthContext';
 
 interface SingleQuestionModeProps {
   testType: TestType | null;
@@ -33,6 +33,9 @@ interface SingleQuestionModeProps {
   setShowExitConfirmation: (value: boolean) => void;
   onExitConfirm: () => void;
   confirmExit?: boolean; // Si es false, no se muestra warning al salir
+  initialQuestions?: Question[]; // Added
+  modeTitle?: string; // Added
+  modeDescription?: string; // Added
 }
 
 export default function SingleQuestionMode({
@@ -44,58 +47,141 @@ export default function SingleQuestionMode({
   showExitConfirmation,
   setShowExitConfirmation,
   onExitConfirm,
-  confirmExit = true
+  confirmExit = true,
+  initialQuestions, // Added
+  modeTitle, // Added
+  modeDescription // Added
 }: SingleQuestionModeProps) {
-  const [currentQuestion, setCurrentQuestion] = useState<any>(null);
-  const [filteredQuestions, setFilteredQuestions] = useState<any[]>([]);
+  const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
+  const [filteredQuestions, setFilteredQuestions] = useState<Question[]>([]);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [showExplanation, setShowExplanation] = useState(false);
   const [corrected, setCorrected] = useState(false);
-  const [bookmarkedQuestions, setBookmarkedQuestions] = useState<Set<string>>(new Set());
+  const [bookmarkedQuestionsDb, setBookmarkedQuestionsDb] = useState<Set<string>>(new Set());
+
+  // State for just-in-time shuffled options for the current question
+  const [displayOptions, setDisplayOptions] = useState<(string | { text: string; image_url?: string; originalIndex: number })[]>([]);
+  const [displayCorrectOption, setDisplayCorrectOption] = useState<number | null>(null);
+
+  const { user } = useAuth();
+
+  const shuffleAndSetDisplayQuestion = (questionToDisplay: Question | null) => {
+    if (questionToDisplay) {
+      setCurrentQuestion(questionToDisplay); // Set current question first
+
+      const originalOptions = questionToDisplay.options;
+      const optionsWithOriginalIndex = originalOptions.map((option, index) => ({
+        option,
+        originalIndex: index
+      }));
+      const shuffledOptionsWithOriginalIndex = [...optionsWithOriginalIndex].sort(() => Math.random() - 0.5);
+
+      const finalShuffledOptions = shuffledOptionsWithOriginalIndex.map(item => {
+        if (typeof item.option === 'object' && item.option !== null) {
+          return { ...(item.option as {text: string, image_url?: string}), originalIndex: item.originalIndex };
+        }
+        return { text: item.option as string, originalIndex: item.originalIndex };
+      });
+      
+      const newCorrectOptionIndex = shuffledOptionsWithOriginalIndex.findIndex(
+        item => item.originalIndex === questionToDisplay.correctOption
+      );
+      
+      setDisplayOptions(finalShuffledOptions);
+      setDisplayCorrectOption(newCorrectOptionIndex);
+      // Reset answer state for the new question presentation
+      setSelectedAnswer(null);
+      setShowExplanation(false);
+      setCorrected(false);
+    } else {
+      setCurrentQuestion(null);
+      setDisplayOptions([]);
+      setDisplayCorrectOption(null);
+    }
+  };
 
   useEffect(() => {
-    async function fetchQuestions() {
-      const { data, error } = await supabase
-        .from('questions')
-        .select('*')
-        .eq('test_type', testType)
-        .in('category', selectedCategories);
-      if (error || !data || data.length === 0) {
-        console.error('No se encontraron preguntas:', error);
+    async function fetchQuestionsAndBookmarks() {
+      let questionsToUse: Question[] = [];
+
+      if (initialQuestions && initialQuestions.length > 0) {
+        questionsToUse = initialQuestions.filter(q => selectedCategories.includes(q.category));
+      } else if (testType && selectedCategories.length > 0) {
+        const { data, error } = await supabase
+          .from('questions')
+          .select('*')
+          .eq('test_type', testType)
+          .in('category', selectedCategories);
+
+        if (error || !data || data.length === 0) {
+          console.error('No se encontraron preguntas:', error);
+          setFilteredQuestions([]);
+          shuffleAndSetDisplayQuestion(null); // Clear display if no questions
+          return;
+        }
+        questionsToUse = data.map((q: any) => ({
+          id: q.id.toString(),
+          category: q.category,
+          topic: q.topic,
+          text: q.text,
+          image_url: q.image_url,
+          options: [
+            q.option1_image_url ? { text: q.option1, image_url: q.option1_image_url } : q.option1,
+            q.option2_image_url ? { text: q.option2, image_url: q.option2_image_url } : q.option2,
+            q.option3_image_url ? { text: q.option3, image_url: q.option3_image_url } : q.option3,
+            q.option4_image_url ? { text: q.option4, image_url: q.option4_image_url } : q.option4,
+          ],
+          correctOption: q.correct_option,
+          explanation: q.explanation,
+          testType: q.test_type as TestType,
+          simulacros: q.simulacros,
+          created_at: q.created_at,
+        }));
+      } else {
+        setFilteredQuestions([]);
+        shuffleAndSetDisplayQuestion(null); // Clear display
         return;
       }
-      // Transformar los datos para incluir imagen de la pregunta y de las opciones
-      const transformed = data.map((q: any) => ({
-        id: q.id.toString(),
-        category: q.category,
-        topic: q.topic,
-        text: q.text,
-        image_url: q.image_url,        // Imagen principal de la pregunta
-        image_alt: q.image_alt,        // Alt de la imagen principal
-        options: [
-          q.option1_image_url
-            ? { text: q.option1, image_url: q.option1_image_url, image_alt: q.option1_image_alt }
-            : q.option1,
-          q.option2_image_url
-            ? { text: q.option2, image_url: q.option2_image_url, image_alt: q.option2_image_alt }
-            : q.option2,
-          q.option3_image_url
-            ? { text: q.option3, image_url: q.option3_image_url, image_alt: q.option3_image_alt }
-            : q.option3,
-          q.option4_image_url
-            ? { text: q.option4, image_url: q.option4_image_url, image_alt: q.option4_image_alt }
-            : q.option4,
-        ],
-        correctOption: q.correct_option,
-        explanation: q.explanation,
-        testType: q.test_type,
-      }));
-      setFilteredQuestions(transformed);
-      const randomIndex = Math.floor(Math.random() * transformed.length);
-      setCurrentQuestion(transformed[randomIndex]);
+      
+      if (questionsToUse.length === 0) {
+        setFilteredQuestions([]);
+        shuffleAndSetDisplayQuestion(null); // Clear display
+        return;
+      }
+
+      setFilteredQuestions(questionsToUse);
+
+      // Logic to decide if we need to set a new question or stick with the current one
+      if (currentQuestion && questionsToUse.some(q => q.id === currentQuestion.id)) {
+        // Current question is still in the filtered list. Do nothing to avoid re-shuffling / changing it.
+        // If bookmarks need to be re-fetched for the current user, that can be a separate effect or handled carefully.
+      } else if (questionsToUse.length > 0) {
+        // No current question, or current question is no longer valid, pick a new one.
+        const randomIndex = Math.floor(Math.random() * questionsToUse.length);
+        shuffleAndSetDisplayQuestion(questionsToUse[randomIndex]);
+      } else {
+        // No questions available
+        shuffleAndSetDisplayQuestion(null);
+      }
+
+      // Fetch bookmarks (conditionally, if user exists)
+      if (user && questionsToUse.length > 0) {
+        const questionIds = questionsToUse.map(q => q.id);
+        const { data: bookmarksData, error: bookmarksError } = await supabase
+          .from('bookmarks')
+          .select('question_id')
+          .eq('user_id', user.id)
+          .in('question_id', questionIds);
+        if (bookmarksError) {
+          console.error('Error fetching bookmarks for single questions:', bookmarksError);
+        } else if (bookmarksData) {
+          setBookmarkedQuestionsDb(new Set(bookmarksData.map(b => b.question_id)));
+        }
+      }
     }
-    fetchQuestions();
-  }, [testType, selectedCategories]);
+    fetchQuestionsAndBookmarks();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [testType, selectedCategories, user?.id, initialQuestions]);
 
   const handleAnswerSelect = (optionIndex: number) => {
     if (corrected) return;
@@ -103,73 +189,86 @@ export default function SingleQuestionMode({
   };
 
   const handleCorrect = () => {
+    if (!currentQuestion || displayCorrectOption === null) return;
     if (corrected) return;
     setShowExplanation(true);
     setCorrected(true);
 
     const newStats = { ...stats };
-
     if (selectedAnswer === null) {
       newStats.unanswered += 1;
-    } else if (selectedAnswer === currentQuestion.correctOption) {
+    } else if (selectedAnswer === displayCorrectOption) {
       newStats.correct += 1;
     } else {
       newStats.incorrect += 1;
     }
-
     newStats.totalCorrected = newStats.correct + newStats.incorrect + newStats.unanswered;
-    const nAlternatives = 4;
+    const nAlternatives = displayOptions.length || 4;
     let rawScore = 0;
     if (newStats.totalCorrected > 0) {
       const penalized = newStats.correct - (newStats.incorrect / (nAlternatives - 1));
       rawScore = (penalized * 10) / newStats.totalCorrected;
     }
     newStats.finalScore = Math.max(0, rawScore).toFixed(2);
-
     setStats(newStats);
   };
 
   const handleNextQuestion = () => {
-    if (filteredQuestions.length) {
+    if (filteredQuestions.length > 0) {
       const randomIndex = Math.floor(Math.random() * filteredQuestions.length);
-      setCurrentQuestion(filteredQuestions[randomIndex]);
+      shuffleAndSetDisplayQuestion(filteredQuestions[randomIndex]);
+    } else {
+      // If no more questions, perhaps show a message or call onExit
+      shuffleAndSetDisplayQuestion(null); // Clear current question display
     }
-    setSelectedAnswer(null);
-    setShowExplanation(false);
-    setCorrected(false);
   };
 
-  const handleBookmark = () => {
-    setBookmarkedQuestions(prev => {
-      const newBookmarks = new Set(prev);
-      if (newBookmarks.has(currentQuestion.id)) {
-        newBookmarks.delete(currentQuestion.id);
+  const handleBookmark = async () => {
+    if (!user || !currentQuestion) return;
+    const questionId = currentQuestion.id;
+    try {
+      const isBookmarked = bookmarkedQuestionsDb.has(questionId);
+      if (isBookmarked) {
+        const { error: deleteError } = await supabase.from('bookmarks').delete().eq('user_id', user.id).eq('question_id', questionId);
+        if (deleteError) throw deleteError;
+        setBookmarkedQuestionsDb(prev => { const newSet = new Set(prev); newSet.delete(questionId); return newSet; });
       } else {
-        newBookmarks.add(currentQuestion.id);
+        const { error: insertError } = await supabase.from('bookmarks').insert({ user_id: user.id, question_id: questionId });
+        if (insertError) throw insertError;
+        setBookmarkedQuestionsDb(prev => new Set(prev).add(questionId));
       }
-      return newBookmarks;
-    });
+    } catch (error) {
+      console.error('Error toggling bookmark in single question mode:', error);
+    }
   };
 
-  const resetQuestion = () => {
-    setSelectedAnswer(null);
-    setShowExplanation(false);
-    setCorrected(false);
-  };
-
-  if (!currentQuestion) {
+  if (!currentQuestion || displayCorrectOption === null) { // Check both currentQuestion and displayCorrectOption for loading/no question state
     return (
       <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-6">
         <div className="card p-6 bg-white dark:bg-gray-800 shadow-lg rounded-xl">
           <p className="text-center text-text-secondary dark:text-gray-400">
-            No hay preguntas disponibles para las categorías seleccionadas.
+            {filteredQuestions.length === 0 && (initialQuestions || testType) // Only show no questions if we attempted to load
+              ? (initialQuestions && initialQuestions.length > 0 && selectedCategories.length === 0 
+                ? "Selecciona categorías para empezar con tus preguntas guardadas."
+                : (initialQuestions && initialQuestions.length > 0 && selectedCategories.length > 0 
+                    ? "No hay preguntas guardadas para las categorías seleccionadas."
+                    : "No hay preguntas disponibles para las categorías seleccionadas."))
+              : "Cargando preguntas..." // Or a general loading/initial state message
+            }
           </p>
-          <button
-            onClick={onExitConfirm}
-            className="mt-4 w-full btn-primary py-2 rounded-md"
-          >
-            Volver
-          </button>
+          {filteredQuestions.length === 0 && (initialQuestions || testType) && (
+            <button
+              onClick={onExitConfirm} // Or onExit if it is more appropriate for this state
+              className="mt-4 w-full btn-primary py-2 rounded-md"
+            >
+              Volver
+            </button>
+          )}
+          {!(filteredQuestions.length === 0 && (initialQuestions || testType)) && currentQuestion === null && (
+             <div className="flex items-center justify-center min-h-[10vh]">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+             </div>
+          )}
         </div>
       </div>
     );
@@ -177,31 +276,25 @@ export default function SingleQuestionMode({
 
   return (
     <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-6">
-      {/* Encabezado del test */}
-      <div className="flex items-center justify-between mb-4 sm:mb-6">
+      {/* Encabezado del test - MODIFIED to add border */}
+      <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 pb-4 mb-4 sm:mb-6">
         <div className="flex items-center space-x-3">
           <div className="w-12 h-12 bg-primary/10 dark:bg-primary/20 rounded-full relative">
             <CircleDot className="w-6 h-6 text-primary absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
           </div>
           <div>
             <h1 className="text-xl sm:text-2xl font-bold text-text-primary dark:text-white">
-              Preguntas Sueltas
+              {modeTitle || 'Preguntas Sueltas'}
             </h1>
             <p className="text-sm sm:text-base text-text-secondary dark:text-gray-400">
-              Practica preguntas individuales sin límite de tiempo
+              {modeDescription || 'Practica preguntas individuales sin límite de tiempo'}
             </p>
           </div>
         </div>
         <div className="flex space-x-2">
           <button
-            onClick={() => {
-              if (!confirmExit) {
-                onExitConfirm();
-              } else {
-                onExit();
-              }
-            }}
-            className="btn-secondary p-2"
+            onClick={() => { if (!confirmExit) { onExitConfirm(); } else { onExit(); } }}
+            className="w-10 h-10 flex items-center justify-center rounded-xl text-text-secondary dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-red-500 dark:hover:text-red-400"
           >
             <X className="w-5 h-5" />
           </button>
@@ -215,26 +308,18 @@ export default function SingleQuestionMode({
             {currentQuestion.category}
           </div>
           <div className="flex space-x-2">
-            <button
+            <button 
               onClick={handleBookmark}
-              className={`p-2 rounded transition-colors ${
-                bookmarkedQuestions.has(currentQuestion.id)
-                  ? 'text-primary bg-primary/10 dark:bg-primary/20'
-                  : 'text-text-secondary dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+              className={`w-10 h-10 flex items-center justify-center rounded-xl bg-primary/10 dark:bg-primary/20 transition-colors ${                bookmarkedQuestionsDb.has(currentQuestion.id)
+                  ? 'text-primary' // Already has bg-primary/10 from base
+                  : 'text-text-secondary dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700' // Adjusted hover for non-bookmarked
               }`}
             >
-              {bookmarkedQuestions.has(currentQuestion.id) ? (
+              {bookmarkedQuestionsDb.has(currentQuestion.id) ? (
                 <BookmarkCheck className="w-5 h-5" />
               ) : (
-                <BookmarkPlus className="w-5 h-5" />
+                <Bookmark className="w-5 h-5" /> // MODIFIED: Changed BookmarkPlus to Bookmark
               )}
-            </button>
-            <button
-              onClick={resetQuestion}
-              className="p-2 rounded transition-colors text-text-secondary dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
-              disabled={!selectedAnswer && !corrected}
-            >
-              <RefreshCw className="w-5 h-5" />
             </button>
           </div>
         </div>
@@ -247,7 +332,7 @@ export default function SingleQuestionMode({
           <div className="mb-6 flex justify-center">
             <img
               src={currentQuestion.image_url}
-              alt={currentQuestion.image_alt || 'Imagen de la pregunta'}
+              alt={`Imagen de la pregunta`}
               className="max-w-[300px] h-auto rounded-lg shadow-sm"
               loading="lazy"
             />
@@ -255,14 +340,14 @@ export default function SingleQuestionMode({
         )}
 
         <div className="space-y-3 mb-6">
-          {currentQuestion.options.map((option: any, index: number) => {
-            const optionText = typeof option === 'object' ? option.text : option;
+          {displayOptions.map((option: any, index: number) => { // Use displayOptions
+            const optionText = option.text;
             let optionClasses =
               'w-full text-left p-4 rounded-lg border transition-colors ';
             if (corrected) {
-              if (index === currentQuestion.correctOption) {
+              if (index === displayCorrectOption) { // Use displayCorrectOption
                 optionClasses += 'bg-green-50 dark:bg-green-900/20 border-green-500 dark:border-green-400 text-green-700 dark:text-green-400';
-              } else if (index === selectedAnswer && index !== currentQuestion.correctOption) {
+              } else if (index === selectedAnswer && index !== displayCorrectOption) { // Use displayCorrectOption
                 optionClasses += 'bg-red-50 dark:bg-red-900/20 border-red-500 dark:border-red-400 text-red-700 dark:text-red-400';
               } else {
                 optionClasses += 'border-gray-200 dark:border-gray-700 text-text-secondary dark:text-gray-400';
@@ -277,21 +362,21 @@ export default function SingleQuestionMode({
             }
             return (
               <button
-                key={index}
-                onClick={() => handleAnswerSelect(index)}
+                key={option.originalIndex} // Use originalIndex from the shuffled item for a stable key if text can repeat
+                onClick={() => handleAnswerSelect(index)} // index is from displayOptions
                 disabled={corrected}
                 className={optionClasses}
               >
                 <div className="flex items-center">
                   <span className="text-primary dark:text-primary font-semibold mr-3">
-                    {String.fromCharCode(65 + index)}.
+                    {String.fromCharCode(65 + index)}. 
                   </span>
                   <div className="flex flex-col">
                     <span className="font-medium">{optionText}</span>
-                    {typeof option === 'object' && option.image_url && (
+                    {option.image_url && (
                       <img
                         src={option.image_url}
-                        alt={option.image_alt || 'Imagen de la opción'}
+                        alt={`Imagen de la opción ${String.fromCharCode(65 + index)}`}
                         className="mt-2 max-w-[150px] h-auto rounded"
                       />
                     )}
@@ -319,7 +404,7 @@ export default function SingleQuestionMode({
           </button>
         )}
 
-        {showExplanation && (
+        {showExplanation && currentQuestion.explanation && (
           <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mt-6">
             <h3 className="font-medium text-text-primary dark:text-white mb-2">Explicación</h3>
             <p className="text-text-secondary dark:text-gray-300">{currentQuestion.explanation}</p>

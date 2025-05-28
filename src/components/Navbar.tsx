@@ -1,14 +1,14 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Shield, User, LogOut } from 'lucide-react';
-import { useAuthStore } from '../lib/store';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function Navbar() {
   const navigate = useNavigate();
-  const { user, logout } = useAuthStore();
+  const { user, signOut } = useAuth();
 
   const handleLogout = () => {
-    logout();
+    signOut();
     navigate('/login');
   };
 
@@ -17,7 +17,7 @@ export default function Navbar() {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           <Link to="/" className="flex items-center space-x-2">
-            <Shield className="w-8 h-8 text-blue-600" />
+            <Shield className="w-8 h-8 text-primary" />
             <span className="font-bold text-xl">OpoPolicia</span>
           </Link>
 
@@ -50,7 +50,7 @@ export default function Navbar() {
                 </Link>
                 <Link
                   to="/register"
-                  className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+                  className="btn-primary px-4 py-2 rounded-md"
                 >
                   Registrarse
                 </Link>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import {
   Bookmark,
@@ -6,13 +6,31 @@ import {
   ArrowLeft,
   ArrowRight,
   Timer,
-  Trophy
+  Trophy,
+  BookmarkCheck
 } from 'lucide-react';
-import { useTestStore, calculateTestScore } from '../lib/store';
+import { useTestStore, calculateTestScore} from '../lib/store';
 import { registerCompletedTest } from '../services/statsService';
+import { supabase } from '../lib/supabase';
+import { useAuth } from '../contexts/AuthContext';
+import type { User } from '@supabase/supabase-js';
+
+// Define an interface for the component props
+interface TestSimulatorProps {
+  user: User | null;
+  showResults: boolean;
+  setShowResults: (value: boolean) => void;
+  startTime: Date | null;
+  resultsSaved: boolean;
+  setResultsSaved: (value: boolean) => void;
+  onNewTest: () => void;
+  onExit: () => void;
+  showExitConfirmation: boolean;
+  setShowExitConfirmation: (value: boolean) => void;
+}
 
 export default function TestSimulator({
-  user,
+  user: authUser,
   showResults,
   setShowResults,
   startTime,
@@ -22,7 +40,7 @@ export default function TestSimulator({
   onExit,
   showExitConfirmation,
   setShowExitConfirmation
-}) {
+}: TestSimulatorProps) {
   const {
     questions,
     currentQuestionIndex,
@@ -31,6 +49,8 @@ export default function TestSimulator({
     answerQuestion,
     finishTest
   } = useTestStore();
+
+  const { user } = useAuth();
 
   const [bookmarkedQuestions, setBookmarkedQuestions] = useState<string[]>([]);
   const [timeExpired, setTimeExpired] = useState(false);
@@ -52,18 +72,82 @@ export default function TestSimulator({
     }
   }, [timeRemaining, showResults, timeExpired, setShowResults]);
 
+  // Fetch existing bookmarks for the current user and questions
+  useEffect(() => {
+    const fetchBookmarkedQuestions = async () => {
+      if (!user || !questions || questions.length === 0) {
+        setBookmarkedQuestions([]);
+        return;
+      }
+      try {
+        const questionIds = questions.map(q => q.id);
+        const { data, error } = await supabase
+          .from('bookmarks')
+          .select('question_id')
+          .eq('user_id', user.id)
+          .in('question_id', questionIds);
+
+        if (error) {
+          console.error('Error fetching bookmarks:', error);
+          setBookmarkedQuestions([]);
+          return;
+        }
+        if (data) {
+          setBookmarkedQuestions(data.map(b => b.question_id));
+        }
+      } catch (error) {
+        console.error('Error in fetchBookmarkedQuestions:', error);
+        setBookmarkedQuestions([]);
+      }
+    };
+
+    fetchBookmarkedQuestions();
+  }, [user, questions]);
+
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const toggleBookmark = (questionId: string) => {
-    setBookmarkedQuestions((prev) =>
-      prev.includes(questionId)
-        ? prev.filter((id) => id !== questionId)
-        : [...prev, questionId]
-    );
+  const toggleBookmark = async (questionId: string) => {
+    if (!user) {
+      console.warn('User not logged in. Cannot bookmark.');
+      // Optionally, prompt user to login or show a message
+      return;
+    }
+
+    try {
+      const isBookmarked = bookmarkedQuestions.includes(questionId);
+      if (isBookmarked) {
+        // Remove bookmark
+        const { error: deleteError } = await supabase
+          .from('bookmarks')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('question_id', questionId);
+
+        if (deleteError) {
+          console.error('Error removing bookmark:', deleteError);
+          return;
+        }
+        setBookmarkedQuestions((prev) => prev.filter((id) => id !== questionId));
+      } else {
+        // Add bookmark
+        const { error: insertError } = await supabase
+          .from('bookmarks')
+          .insert({ user_id: user.id, question_id: questionId });
+
+        if (insertError) {
+          // Handle potential unique constraint violation if needed, though UI should prevent double-add.
+          console.error('Error adding bookmark:', insertError);
+          return;
+        }
+        setBookmarkedQuestions((prev) => [...prev, questionId]);
+      }
+    } catch (error) {
+      console.error('Error toggling bookmark:', error);
+    }
   };
 
   const calculateResults = () => {
@@ -71,7 +155,7 @@ export default function TestSimulator({
       incorrect = 0,
       blank = 0;
     questions.forEach((question) => {
-      if (answers[question.id] === question.correctOption) {
+      if (answers[question.id] === question.shuffledCorrectOption) {
         correct++;
       } else if (answers[question.id] !== undefined) {
         incorrect++;
@@ -109,10 +193,10 @@ export default function TestSimulator({
     if (seconds > 0) timeTaken += `${seconds}S`;
     
     // Guardar resultados en Supabase
-    if (user) {
+    if (authUser) {
       setSavingResults(true);
       try {
-        await registerCompletedTest(user.id, {
+        await registerCompletedTest(authUser.id, {
           // Se actualiza el fallback a "Teoría" (o según corresponda)
           test_type: questions[0]?.testType || 'Teoría',
           categories: questions.map(q => q.category).filter((v, i, a) => a.indexOf(v) === i),
@@ -135,9 +219,6 @@ export default function TestSimulator({
 
   const handleAnswerQuestion = (questionId: string, optionIndex: number) => {
     answerQuestion(questionId, optionIndex);
-    if (currentQuestionIndex < questions.length - 1) {
-      useTestStore.setState({ currentQuestionIndex: currentQuestionIndex + 1 });
-    }
   };
 
   // Estilo base para las tarjetas
@@ -242,7 +323,7 @@ export default function TestSimulator({
                 let pillColor = 'bg-gray-400';
                 if (answers[question.id] !== undefined) {
                   pillColor =
-                    answers[question.id] === question.correctOption
+                    answers[question.id] === question.shuffledCorrectOption
                       ? 'bg-green-500'
                       : 'bg-red-500';
                 }
@@ -276,15 +357,15 @@ export default function TestSimulator({
               <div className="mb-4 flex justify-center">
                 <img
                   src={questions[selectedQuestionIndex].image_url}
-                  alt={questions[selectedQuestionIndex].image_alt || 'Imagen de la pregunta'}
+                  alt={`Imagen de la pregunta ${selectedQuestionIndex + 1}`}
                   className="max-w-full h-auto rounded-md shadow-sm"
                   loading="lazy"
                 />
               </div>
             )}
             <div className="space-y-2 mb-4">
-              {questions[selectedQuestionIndex].options.map((option, index) => {
-                const isCorrect = index === questions[selectedQuestionIndex].correctOption;
+              {questions[selectedQuestionIndex].shuffledOptions?.map((option, index) => {
+                const isCorrect = index === questions[selectedQuestionIndex].shuffledCorrectOption;
                 const userAnswer = answers[questions[selectedQuestionIndex].id];
                 const isUserWrong =
                   userAnswer !== undefined && userAnswer === index && !isCorrect;
@@ -301,7 +382,7 @@ export default function TestSimulator({
                 return (
                   <div key={index} className={optionClasses}>
                     <div className="flex items-center">
-                      <span className="font-semibold mr-3 text-purple-500">
+                      <span className="font-semibold mr-3 text-primary">
                         {String.fromCharCode(65 + index)}.
                       </span>
                       <div className="flex flex-col">
@@ -311,7 +392,7 @@ export default function TestSimulator({
                         {typeof option === 'object' && option.image_url && (
                           <img
                             src={option.image_url}
-                            alt={option.image_alt || 'Imagen de la opción'}
+                            alt={`Imagen de la opción ${String.fromCharCode(65 + index)}`}
                             className="mt-2 h-12 w-auto rounded"
                           />
                         )}
@@ -354,16 +435,6 @@ export default function TestSimulator({
     <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-6">
       <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 pb-4 mb-4">
         <div className="flex items-center space-x-3">
-          <button
-            onClick={() => toggleBookmark(currentQuestion.id)}
-            className={`w-10 h-10 flex items-center justify-center rounded-xl bg-primary/10 dark:bg-primary/20 transition-colors ${
-              bookmarkedQuestions.includes(currentQuestion.id)
-                ? 'text-primary'
-                : 'text-text-secondary dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
-            }`}
-          >
-            <Bookmark className="w-5 h-5" />
-          </button>
           <h1 className="text-xl sm:text-2xl font-bold text-text-primary dark:text-white">
             Pregunta {currentQuestionIndex + 1} de {questions.length}
           </h1>
@@ -389,6 +460,20 @@ export default function TestSimulator({
       </div>
       <div className={cardStyle}>
         <div className="p-2">
+          <div className="flex justify-between items-start mb-4">
+            <div className="text-xs text-primary dark:text-primary/90">
+              {currentQuestion.category} 
+            </div>
+            <button
+              onClick={() => toggleBookmark(currentQuestion.id)}
+              className={`w-10 h-10 flex items-center justify-center rounded-xl bg-primary/10 dark:bg-primary/20 transition-colors ${                bookmarkedQuestions.includes(currentQuestion.id)
+                  ? 'text-primary'
+                  : 'text-text-secondary dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+              }`}
+            >
+              {bookmarkedQuestions.includes(currentQuestion.id) ? <BookmarkCheck className="w-5 h-5" /> : <Bookmark className="w-5 h-5" />}
+            </button>
+          </div>
           <div className="mb-6">
             <p className="text-lg text-text-primary dark:text-white mb-4">
               {currentQuestion.text}
@@ -397,14 +482,14 @@ export default function TestSimulator({
               <div className="mb-6 flex justify-center">
                 <img
                   src={currentQuestion.image_url}
-                  alt={currentQuestion.image_alt || 'Imagen de la pregunta'}
+                  alt={`Imagen de la pregunta ${currentQuestionIndex + 1}`}
                   className="max-w-[300px] h-auto rounded-lg shadow-sm"
                   loading="lazy"
                 />
               </div>
             )}
             <div className="space-y-3">
-              {currentQuestion.options.map((option, index) => {
+              {currentQuestion.shuffledOptions?.map((option, index) => {
                 const optionText = typeof option === 'object' ? option.text : option;
                 return (
                   <button
@@ -427,7 +512,7 @@ export default function TestSimulator({
                         {typeof option === 'object' && option.image_url && (
                           <img
                             src={option.image_url}
-                            alt={option.image_alt || 'Imagen de la opción'}
+                            alt={`Imagen de la opción ${String.fromCharCode(65 + index)}`}
                             className="mt-2 max-w-[150px] h-auto rounded"
                           />
                         )}

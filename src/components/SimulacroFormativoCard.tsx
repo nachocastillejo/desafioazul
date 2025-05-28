@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { ClipboardCheck } from 'lucide-react';
-import { useTestStore } from '../lib/store';
+import { useTestStore, Question } from '../lib/store';
 import { useQuestionsStore } from '../lib/store';
 import { supabase } from '../lib/supabase';
 
@@ -20,7 +20,7 @@ const parseSimulacros = (value: any): string[] => {
 const SimulacroFormativoCard: React.FC = () => {
   // Obtenemos las preguntas y la función para cargarlas
   const { questions, fetchQuestions } = useQuestionsStore();
-  const testStore = useTestStore();
+  //const testStore = useTestStore();
 
   // Asegurarse de que se carguen las preguntas si aún no están
   useEffect(() => {
@@ -62,24 +62,47 @@ const SimulacroFormativoCard: React.FC = () => {
     }
   
     // Transformar las preguntas para que tengan el formato esperado.
-    const transformed = data.map((q: any) => ({
-      id: q.id.toString(),
-      testType: q.test_type,
-      category: q.category,
-      topic: q.topic,
-      text: q.text,
-      options: [
+    const transformed: Question[] = data.map((q: any) => {
+      const originalOptions = [
         q.option1_image_url ? { text: q.option1, image_url: q.option1_image_url } : q.option1,
         q.option2_image_url ? { text: q.option2, image_url: q.option2_image_url } : q.option2,
         q.option3_image_url ? { text: q.option3, image_url: q.option3_image_url } : q.option3,
         q.option4_image_url ? { text: q.option4, image_url: q.option4_image_url } : q.option4,
-      ],
-      correctOption: q.correct_option,
-      explanation: q.explanation,
-      image_url: q.image_url,
-      simulacros: parseSimulacros(q.simulacros),
-      created_at: q.created_at
-    }));
+      ];
+
+      const optionsWithOriginalIndex = originalOptions.map((option, index) => ({
+        option,
+        originalIndex: index
+      }));
+      const shuffledOptionsWithOriginalIndex = [...optionsWithOriginalIndex].sort(() => Math.random() - 0.5);
+
+      const finalShuffledOptions = shuffledOptionsWithOriginalIndex.map(item => {
+        if (typeof item.option === 'object' && item.option !== null) {
+          return { ...item.option, originalIndex: item.originalIndex };
+        }
+        return { text: item.option as string, originalIndex: item.originalIndex };
+      });
+      
+      const newCorrectOptionIndex = shuffledOptionsWithOriginalIndex.findIndex(
+        item => item.originalIndex === q.correct_option
+      );
+      
+      return {
+        id: q.id.toString(),
+        testType: q.test_type,
+        category: q.category,
+        topic: q.topic,
+        text: q.text,
+        options: originalOptions,
+        correctOption: q.correct_option,
+        explanation: q.explanation,
+        image_url: q.image_url,
+        simulacros: parseSimulacros(q.simulacros),
+        created_at: q.created_at,
+        shuffledOptions: finalShuffledOptions,
+        shuffledCorrectOption: newCorrectOptionIndex,
+      };
+    });
   
     const shuffled = transformed.sort(() => Math.random() - 0.5);
   
