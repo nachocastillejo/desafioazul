@@ -120,13 +120,6 @@ export default function Login() {
     }
   ];
 
-  const stats = [
-    { number: "1,000+", label: "Preguntas disponibles" },
-    { number: "Nuevo", label: "Plataforma innovadora" },
-    { number: "100%", label: "Enfoque personalizado" },
-    { number: "24/7", label: "Acceso disponible" }
-  ];
-
   if (showAuthForm) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-slate-100 to-white dark:from-gray-900 dark:to-gray-800">
@@ -423,16 +416,16 @@ export default function Login() {
             </div>
           </div>
 
-          {/* Stats */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 mb-20">
-            {stats.map((stat, index) => (
-              <div key={index} className="text-center">
-                <div className="text-3xl lg:text-4xl font-bold text-primary mb-2">
-                  {stat.number}
-                </div>
-                <div className="text-text-secondary dark:text-gray-400">
-                  {stat.label}
-                </div>
+          {/* Stats Images */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 mb-20 px-4">
+            {[
+              '/images/login_image_1.png',
+              '/images/login_image_2.png',
+              '/images/login_image_3.png',
+              '/images/login_image_4.png'
+            ].map((src, index) => (
+              <div key={index} className="flex justify-center items-center">
+                <img src={src} alt={`Imagen de estadística ${index + 1}`} className="max-w-full h-auto" />
               </div>
             ))}
           </div>

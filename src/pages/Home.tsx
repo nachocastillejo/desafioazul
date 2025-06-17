@@ -38,7 +38,7 @@ export default function Home() {
             to="/test"
             className="inline-flex items-center justify-center px-6 py-3 bg-gradient-to-r from-primary to-blue-600 hover:from-primary-hover hover:to-blue-700 text-white font-medium rounded-xl transition-all duration-300 shadow-lg shadow-primary/20"
           >
-            Iniciar Test
+            Iniciar Prueba Gratuita
           </Link>
         </div>
       </div>
@@ -55,7 +55,7 @@ export default function Home() {
             Desbloquea todo el potencial
           </h2>
           <p className="text-text-secondary dark:text-gray-400 text-base sm:text-lg mb-6">
-            Actualiza a Premium por solo €9.99/mes y accede a todas las funcionalidades avanzadas para maximizar tu preparación.
+            Actualiza a Premium por solo €9.99/mes y accede a todas las funcionalidades avanzadas para maximizar tu preparación. Además, puedes realizar un test de prueba gratuito antes de actualizar para probar la plataforma.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-6">
             <div className="flex items-center space-x-2 text-sm text-text-secondary dark:text-gray-400">
