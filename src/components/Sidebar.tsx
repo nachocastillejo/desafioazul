@@ -12,11 +12,14 @@ import {
   LogOut,
   Bookmark,
   Info,
-  Crown
+  Crown,
+  CheckCircle,
+  Clock
 } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
 import { useTestStore } from '../lib/store';
 import { useAuth } from '../contexts/AuthContext';
+import { useSubscription } from '../hooks/useSubscription';
 
 interface SidebarProps {
   onCloseMobile?: () => void;
@@ -27,6 +30,7 @@ export default function Sidebar({ onCloseMobile }: SidebarProps) {
   const navigate = useNavigate();
   const { isTestStarted, finishTest } = useTestStore();
   const { user, profile, signOut } = useAuth();
+  const { subscriptionInfo, isPremium } = useSubscription();
 
   const handleNavigation = (path: string) => {
     if (isTestStarted) {
@@ -66,13 +70,29 @@ export default function Sidebar({ onCloseMobile }: SidebarProps) {
                 <User className="w-6 h-6 text-primary" />
               </div>
             )}
-            <div className="flex flex-col">
-              <span className="font-semibold text-text-primary dark:text-white text-lg">
+            <div className="flex flex-col gap-1">
+              <span className="font-semibold text-text-primary dark:text-white text-lg leading-tight">
                 {profile?.full_name || 'Usuario'}
               </span>
-              <span className="text-sm text-text-secondary dark:text-gray-400">
+              <span className="text-sm text-text-secondary dark:text-gray-400 leading-tight">
                 {user?.email?.split('@')[0] || 'Invitado'}
               </span>
+              {isPremium ? (
+                <div className="flex items-center w-fit bg-amber-100 text-amber-800 dark:bg-amber-800/20 dark:text-amber-400 text-xs font-medium px-2 py-0.5 rounded-full mt-1">
+                  <Crown className="w-3 h-3 mr-1" />
+                  Premium
+                </div>
+              ) : (
+                <div
+                  className={`flex items-center w-fit text-xs font-medium px-2 py-0.5 rounded-full mt-1 ${
+                    (profile?.free_tests_taken ?? 0) < 5
+                      ? 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                      : 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-400'
+                  }`}
+                >
+                  Free ({profile?.free_tests_taken ?? 0}/5)
+                </div>
+              )}
             </div>
           </div>
           {/* Botón de menú para móviles */}

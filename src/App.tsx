@@ -8,7 +8,6 @@ import Progress from './pages/Progress';
 import Bookmarks from './pages/Bookmarks';
 import AdminQuestions from './pages/AdminQuestions';
 import Login from './pages/Login';
-import Register from './pages/Register';
 import Subscription from './pages/Subscription';
 import { Menu } from 'lucide-react';
 import { AuthProvider } from './contexts/AuthContext';
@@ -36,10 +35,21 @@ function App() {
         <Routes>
           {/* Rutas públicas */}
           <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/suscripcion" element={<Subscription />} />
           
           {/* Rutas protegidas */}
+          <Route
+            path="/suscripcion"
+            element={(
+              <ProtectedRoute>
+                <AppLayout
+                  isSidebarOpen={isSidebarOpen}
+                  toggleSidebar={toggleSidebar}
+                >
+                  <Subscription />
+                </AppLayout>
+              </ProtectedRoute>
+            )}
+          />
           <Route
             path="/"
             element={(

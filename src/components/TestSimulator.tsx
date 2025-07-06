@@ -17,7 +17,6 @@ import type { User } from '@supabase/supabase-js';
 
 // Define an interface for the component props
 interface TestSimulatorProps {
-  user: User | null;
   showResults: boolean;
   setShowResults: (value: boolean) => void;
   startTime: Date | null;
@@ -30,7 +29,6 @@ interface TestSimulatorProps {
 }
 
 export default function TestSimulator({
-  user: authUser,
   showResults,
   setShowResults,
   startTime,
@@ -50,7 +48,7 @@ export default function TestSimulator({
     finishTest
   } = useTestStore();
 
-  const { user } = useAuth();
+  const { user, refreshProfile } = useAuth();
 
   const [bookmarkedQuestions, setBookmarkedQuestions] = useState<string[]>([]);
   const [timeExpired, setTimeExpired] = useState(false);
@@ -193,10 +191,10 @@ export default function TestSimulator({
     if (seconds > 0) timeTaken += `${seconds}S`;
     
     // Guardar resultados en Supabase
-    if (authUser) {
+    if (user) {
       setSavingResults(true);
       try {
-        await registerCompletedTest(authUser.id, {
+        await registerCompletedTest(user.id, {
           // Se actualiza el fallback a "Teoría" (o según corresponda)
           test_type: questions[0]?.testType || 'Teoría',
           categories: questions.map(q => q.category).filter((v, i, a) => a.indexOf(v) === i),
@@ -209,6 +207,9 @@ export default function TestSimulator({
           time_taken: timeTaken
         });
         setResultsSaved(true);
+        if (refreshProfile) {
+          refreshProfile();
+        }
       } catch (error) {
         console.error('Error al guardar resultados:', error);
       } finally {

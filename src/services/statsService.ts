@@ -93,6 +93,21 @@ export const registerCompletedTest = async (
         increment_by: 1
       }),
       
+      // Llamar a la nueva función si el usuario es gratuito
+      (async () => {
+        const { data: profile } = await supabase
+          .from('user_profiles')
+          .select('subscription_status')
+          .eq('id', userId)
+          .single();
+
+        if (profile && profile.subscription_status !== 'active' && profile.subscription_status !== 'premium') {
+          return supabase.rpc('increment_free_test_counter', {
+            p_user_id: userId,
+          });
+        }
+      })(),
+
       // Actualizar el total de preguntas respondidas (en paralelo)
       supabase.rpc('increment_user_stat', {
         user_id: userId,
@@ -327,6 +342,16 @@ export const getEvolutionData = async (userId: string, limit = 10, testType?: st
 /**
  * Obtiene las áreas fuertes y débiles del usuario
  */
+
+interface StrengthAreaData {
+  is_strength: boolean;
+  category: string;
+  mastery_level: number;
+  test_type: string;
+  questions_seen: number;
+  questions_correct: number;
+}
+
 export const getUserStrengthAreas = async (userId: string, testType?: string) => {
   try {
     console.log('[getUserStrengthAreas] userId:', userId, 'testType:', testType);
@@ -349,8 +374,8 @@ export const getUserStrengthAreas = async (userId: string, testType?: string) =>
 
     // Separar áreas fuertes y débiles
     const strengthAreas = data
-      .filter(area => area.is_strength)
-      .map(area => ({
+      .filter((area: StrengthAreaData) => area.is_strength)
+      .map((area: StrengthAreaData) => ({
         topic: area.category,
         score: area.mastery_level,
         type: area.test_type,
@@ -359,8 +384,8 @@ export const getUserStrengthAreas = async (userId: string, testType?: string) =>
       }));
     
     const improvementAreas = data
-      .filter(area => !area.is_strength)
-      .map(area => ({
+      .filter((area: StrengthAreaData) => !area.is_strength)
+      .map((area: StrengthAreaData) => ({
         topic: area.category,
         score: area.mastery_level,
         type: area.test_type,

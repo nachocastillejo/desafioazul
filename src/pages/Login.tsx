@@ -19,11 +19,18 @@ import {
   User
 } from 'lucide-react';
 
+// Un simple componente para el icono de Google
+const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg stroke="currentColor" fill="currentColor" strokeWidth="0" viewBox="0 0 488 512" {...props}>
+    <path d="M488 261.8C488 403.3 381.5 512 244 512 111.3 512 0 398.5 0 256S111.3 0 244 0c73 0 134.3 29.3 179.3 71.9l-62.8 54.3C337 99.1 296.3 80 244 80 149.3 80 71.6 156.3 71.6 256s77.7 176 172.4 176c83.5 0 125.2-34.4 129.2-83.3H244v-96h244z"></path>
+  </svg>
+);
+
 type AuthMode = 'login' | 'register';
 
 export default function Login() {
   const navigate = useNavigate();
-  const { signIn, signUp } = useAuth();
+  const { signIn, signUp, signInWithGoogle } = useAuth();
 
   const [authMode, setAuthMode] = useState<AuthMode>('login');
   const [showAuthForm, setShowAuthForm] = useState(false);
@@ -41,6 +48,15 @@ export default function Login() {
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const handleGoogleSignIn = async () => {
+    setError(null);
+    // No es necesario setLoading(true) aquí, porque la página se recargará.
+    const { error } = await signInWithGoogle();
+    if (error) {
+      setError(error.message || 'Error al iniciar sesión con Google');
+    }
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -149,6 +165,26 @@ export default function Login() {
                 {error}
               </div>
             )}
+
+            {/* Google Sign In */}
+            <div className="space-y-4">
+               <button
+                  onClick={handleGoogleSignIn}
+                  className="w-full btn-secondary py-3 rounded-xl flex items-center justify-center"
+                >
+                  <GoogleIcon className="w-5 h-5 mr-3" />
+                  <span>{authMode === 'login' ? 'Iniciar sesión con Google' : 'Registrarse con Google'}</span>
+                </button>
+            </div>
+
+             <div className="my-6 flex items-center">
+              <div className="flex-grow border-t border-gray-200 dark:border-gray-700"></div>
+              <span className="mx-4 text-sm text-text-secondary dark:text-gray-400">
+                O continuar con
+              </span>
+              <div className="flex-grow border-t border-gray-200 dark:border-gray-700"></div>
+            </div>
+
 
             {/* Forms */}
             {authMode === 'login' ? (

@@ -13,6 +13,8 @@ import TestSimulator from '../components/TestSimulator';
 import SingleQuestionMode from '../components/SingleQuestionMode';
 import SimulacroFormativoCard from '../components/SimulacroFormativoCard';
 import { supabase } from '../lib/supabase'; // Added Supabase import
+import { useSubscription } from '../hooks/useSubscription';
+import ConfirmModal from '../components/ConfirmModal';
 
 // Define interfaces for props to fix 'any' type errors and improve clarity
 interface TestCardProps {
@@ -202,7 +204,9 @@ export default function QuestionView() {
     setSelectedCategories
   } = useTestStore();
 
-  const { user } = useAuth();
+  const { user, refreshProfile } = useAuth();
+  const { isPremium } = useSubscription();
+  const [userProfile, setUserProfile] = useState<any>(null);
   // const DB_PRACTICE_STATS_KEY = 'PSICOTECNICO_SUELTAS'; // No longer needed for table/row identification
 
   // Estados locales para número de preguntas en Teoría y Psicotécnico
@@ -219,6 +223,7 @@ export default function QuestionView() {
   const [showResults, setShowResults] = useState(false);
   const [resultsSaved, setResultsSaved] = useState(false);
   const [showExitConfirmation, setShowExitConfirmation] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   // Estados para estadísticas de preguntas sueltas (específicamente para Psicotécnico en la tarjeta)
   const initialPracticeStats = {
@@ -230,17 +235,27 @@ export default function QuestionView() {
   };
   const [singleQuestionStats, setSingleQuestionStats] = useState(initialPracticeStats);
 
-  // Load practice stats from DB
+  useEffect(() => {
+    return () => {
+      // Si el componente se desmonta y hay un test en progreso, lo finalizamos.
+      if (useTestStore.getState().isTestStarted) {
+        finishTest();
+      }
+    };
+  }, [finishTest]);
+
+  // Load practice stats and user profile from DB
   useEffect(() => {
     if (user) {
-      const fetchPracticeStats = async () => {
+      const fetchUserData = async () => {
         const { data, error } = await supabase
-          .from('user_profiles') // Changed to user_profiles
-          .select('preguntas_sueltas_correct, preguntas_sueltas_incorrect, preguntas_sueltas_unanswered, preguntas_sueltas_total_corrected, preguntas_sueltas_final_score') // Select specific columns with new names
-          .eq('id', user.id) // Assuming user_profiles uses 'id' as PK linked to auth.users.id
+          .from('user_profiles') 
+          .select('*') 
+          .eq('id', user.id) 
           .single();
 
         if (data && !error) {
+          setUserProfile(data);
           setSingleQuestionStats({
             correct: data.preguntas_sueltas_correct || 0,
             incorrect: data.preguntas_sueltas_incorrect || 0,
@@ -248,19 +263,20 @@ export default function QuestionView() {
             totalCorrected: data.preguntas_sueltas_total_corrected || 0,
             finalScore: data.preguntas_sueltas_final_score || '0.00'
           });
-        } else if (error && error.code !== 'PGRST116') { // PGRST116: 'No rows found' (user might not have a profile yet or no stats saved)
+        } else if (error && error.code !== 'PGRST116') {
           console.warn('User profile or practice stats not found, or error fetching:', error);
-          // Optionally, create a profile row here if it doesn't exist, or ensure it's created on sign-up.
-          // For now, we just use initial stats.
           setSingleQuestionStats(initialPracticeStats);
+          setUserProfile(null);
+        } else {
+          setSingleQuestionStats(initialPracticeStats);
+          setUserProfile(null);
         }
       };
-      fetchPracticeStats();
+      fetchUserData();
     } else {
-      // If user logs out, reset stats to initial
       setSingleQuestionStats(initialPracticeStats);
+      setUserProfile(null);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   const savePracticeStatsToDb = async (statsToSave: typeof initialPracticeStats) => {
@@ -282,24 +298,36 @@ export default function QuestionView() {
     }
   };
 
+  const handleStartAttempt = (startFunction: () => void) => {
+    if (!isPremium && (userProfile?.free_tests_taken ?? 0) >= 5) {
+      setShowUpgradeModal(true);
+    } else {
+      startFunction();
+    }
+  };
+
   // Función para iniciar el test según el tipo
   const handleTestStart = (type: TestType) => {
-    setTestType(type);
-    setShowSingleQuestionMode(false);
-    if (type === 'Teoría') {
-      setNumberOfQuestions(teoriaNumQuestions);
-    } else {
-      setNumberOfQuestions(psicoNumQuestions);
-    }
-    setShowCategoryModal(true);
+    handleStartAttempt(() => {
+      setTestType(type);
+      setShowSingleQuestionMode(false);
+      if (type === 'Teoría') {
+        setNumberOfQuestions(teoriaNumQuestions);
+      } else {
+        setNumberOfQuestions(psicoNumQuestions);
+      }
+      setShowCategoryModal(true);
+    });
   };
 
   // Función para iniciar preguntas sueltas
   const handleSingleQuestionStart = (type: TestType) => {
-    setSingleQuestionType(type);
-    setTestType(type);
-    setShowSingleQuestionMode(true);
-    setShowCategoryModal(true);
+    handleStartAttempt(() => {
+      setSingleQuestionType(type);
+      setTestType(type);
+      setShowSingleQuestionMode(true);
+      setShowCategoryModal(true);
+    });
   };
 
   // Cuando el usuario confirma la selección de categorías
@@ -309,7 +337,10 @@ export default function QuestionView() {
     setShowCategoryModal(false);
   };
 
-  const handleNewTest = () => {
+  const handleNewTest = async () => {
+    if (refreshProfile) {
+      await refreshProfile();
+    }
     finishTest();
     setShowResults(false);
     setResultsSaved(false);
@@ -336,6 +367,13 @@ export default function QuestionView() {
 
   const handleExit = () => setShowExitConfirmation(true);
 
+  const handleExitWithRefresh = async () => {
+    await refreshProfile();
+    setShowSingleQuestionMode(false);
+    finishTest();
+    setShowExitConfirmation(false);
+  };
+
   // Modo de preguntas sueltas
   if (showSingleQuestionMode && isTestStarted) {
     return (
@@ -348,11 +386,7 @@ export default function QuestionView() {
         onExit={() => onExitConfirmWrapper()}  
         showExitConfirmation={showExitConfirmation}
         setShowExitConfirmation={setShowExitConfirmation}
-        onExitConfirm={() => {
-          setShowSingleQuestionMode(false);
-          finishTest();
-          setShowExitConfirmation(false);
-        }}
+        onExitConfirm={handleExitWithRefresh}
       />
     );
   }
@@ -361,7 +395,6 @@ export default function QuestionView() {
   if (isTestStarted) {
     return (
       <TestSimulator
-        user={user}
         showResults={showResults}
         setShowResults={setShowResults}
         startTime={startTime}
@@ -443,6 +476,19 @@ export default function QuestionView() {
         onClose={() => setShowCategoryModal(false)}
         onStart={handleStartTestModal}
       />
+      
+      {showUpgradeModal && (
+        <ConfirmModal
+          onCancel={() => setShowUpgradeModal(false)}
+          onConfirm={() => {
+            window.location.href = '/suscripcion';
+          }}
+          title="Límite de tests gratuitos alcanzado"
+          message="Has completado los 5 tests gratuitos. Para seguir practicando sin límites y acceder a todas las funcionalidades, actualiza a Premium."
+          confirmText="Actualizar a Premium"
+          cancelText="Más tarde"
+        />
+      )}
     </div>
   );
 }

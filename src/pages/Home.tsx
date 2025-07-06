@@ -1,8 +1,27 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Brain, Target, User, Crown, Zap } from 'lucide-react';
+import { Brain, Target, User, Crown, Zap, Loader2 } from 'lucide-react';
+import { useSubscription } from '../hooks/useSubscription';
 
 export default function Home() {
+  const { isPremium, createCheckoutSession, subscriptionInfo } = useSubscription();
+  const [isRedirecting, setIsRedirecting] = useState(false);
+
+  const handleUpgradeToPremium = async () => {
+    if (isPremium) {
+      // Redirigir a la página de suscripción para gestionar
+      window.location.href = '/suscripcion';
+      return;
+    }
+    
+    setIsRedirecting(true);
+    try {
+      await createCheckoutSession();
+    } finally {
+      setIsRedirecting(false);
+    }
+  };
+
   return (
     <div className="max-w-5xl mx-auto p-4 sm:p-8">
       {/* Sección de Identidad */}
@@ -52,10 +71,13 @@ export default function Home() {
             </div>
           </div>
           <h2 className="text-2xl sm:text-3xl font-bold text-text-primary dark:text-white mb-4">
-            Desbloquea todo el potencial
+            {isPremium ? '¡Ya eres Premium!' : 'Desbloquea todo el potencial'}
           </h2>
           <p className="text-text-secondary dark:text-gray-400 text-base sm:text-lg mb-6">
-            Actualiza a Premium por solo €9.99/mes y accede a todas las funcionalidades avanzadas para maximizar tu preparación. Además, puedes realizar un test de prueba gratuito antes de actualizar para probar la plataforma.
+            {isPremium 
+              ? `Tienes acceso completo a todas las funcionalidades premium. Tu suscripción está activa hasta el ${subscriptionInfo.endDate ? new Date(subscriptionInfo.endDate).toLocaleDateString() : ''}.`
+              : 'Actualiza a Premium por solo €9.99/mes y accede a todas las funcionalidades avanzadas para maximizar tu preparación. Además, puedes realizar un test de prueba gratuito antes de actualizar para probar la plataforma.'
+            }
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-6">
             <div className="flex items-center space-x-2 text-sm text-text-secondary dark:text-gray-400">
@@ -75,12 +97,22 @@ export default function Home() {
             <span className="text-3xl font-bold text-primary">€9.99</span>
             <span className="text-text-secondary dark:text-gray-400 ml-1">/mes</span>
           </div>
-          <Link
-            to="/suscripcion"
-            className="inline-flex items-center justify-center px-8 py-3 bg-gradient-to-r from-primary to-blue-600 hover:from-primary-hover hover:to-blue-700 text-white font-medium rounded-xl transition-all duration-300 shadow-lg shadow-primary/20"
+          <button
+            onClick={handleUpgradeToPremium}
+            disabled={isRedirecting}
+            className="inline-flex items-center justify-center px-8 py-3 bg-gradient-to-r from-primary to-blue-600 hover:from-primary-hover hover:to-blue-700 text-white font-medium rounded-xl transition-all duration-300 shadow-lg shadow-primary/20 disabled:opacity-50"
           >
-            Actualizar a Premium
-          </Link>
+            {isRedirecting ? (
+              <>
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                Redirigiendo...
+              </>
+            ) : isPremium ? (
+              'Gestionar Suscripción'
+            ) : (
+              'Actualizar a Premium'
+            )}
+          </button>
         </div>
       </div>
 
