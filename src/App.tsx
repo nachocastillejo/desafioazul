@@ -13,6 +13,7 @@ import { Menu } from 'lucide-react';
 import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Footer from './components/Footer';
+import PublicPageLayout from './components/PublicPageLayout';
 
 const Profile = lazy(() => import('./pages/Profile'));
 const LegalPage = lazy(() => import('./pages/LegalPage'));
@@ -134,23 +135,23 @@ function App() {
           />
           <Route
             path="/aviso-legal"
-            element={<Suspense fallback={<div>Loading...</div>}><AppLayout isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar}><LegalPage /></AppLayout></Suspense>}
+            element={<Suspense fallback={<div>Loading...</div>}><PublicPageLayout><LegalPage /></PublicPageLayout></Suspense>}
           />
           <Route
             path="/politica-de-privacidad"
-            element={<Suspense fallback={<div>Loading...</div>}><AppLayout isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar}><PrivacyPolicyPage /></AppLayout></Suspense>}
+            element={<Suspense fallback={<div>Loading...</div>}><PublicPageLayout><PrivacyPolicyPage /></PublicPageLayout></Suspense>}
           />
           <Route
             path="/politica-de-cookies"
-            element={<Suspense fallback={<div>Loading...</div>}><AppLayout isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar}><CookiesPolicyPage /></AppLayout></Suspense>}
+            element={<Suspense fallback={<div>Loading...</div>}><PublicPageLayout><CookiesPolicyPage /></PublicPageLayout></Suspense>}
           />
           <Route
             path="/condiciones-generales-de-compra"
-            element={<Suspense fallback={<div>Loading...</div>}><AppLayout isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar}><PurchaseTermsPage /></AppLayout></Suspense>}
+            element={<Suspense fallback={<div>Loading...</div>}><PublicPageLayout><PurchaseTermsPage /></PublicPageLayout></Suspense>}
           />
           <Route
             path="/faq"
-            element={<Suspense fallback={<div>Loading...</div>}><AppLayout isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar}><FaqPage /></AppLayout></Suspense>}
+            element={<Suspense fallback={<div>Loading...</div>}><PublicPageLayout><FaqPage /></PublicPageLayout></Suspense>}
           />
           <Route
             path="/ajustes"
