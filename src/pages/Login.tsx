@@ -18,6 +18,7 @@ import {
   ArrowRight,
   User
 } from 'lucide-react';
+import Footer from '../components/Footer';
 
 // Un simple componente para el icono de Google
 const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -595,6 +596,9 @@ export default function Login() {
             <ArrowRight className="w-5 h-5" />
           </button>
         </div>
+      </div>
+      <div className="px-4">
+        <Footer />
       </div>
     </div>
   );
